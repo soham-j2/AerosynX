@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "chart.js": "^4.5.1",
+    "lucide-react": "^1.38.0",
+    "react-chartjs-2": "^5.3.1"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.5.4",
+    "postcss": "^8.5.26",
+    "tailwindcss": "^4.3.3"
+  }
+}
