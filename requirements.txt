@@ -8,3 +8,4 @@ flask
 flask-cors
 pymongo
 websockets
+requests
