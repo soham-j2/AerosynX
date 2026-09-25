@@ -4,3 +4,7 @@ scikit-learn
 xgboost
 shap
 joblib
+flask
+flask-cors
+pymongo
+websockets
