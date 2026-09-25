@@ -1,0 +1,43 @@
+{
+  "model_name": "AeroSynX Hybrid Engine Health AI",
+  "version": "3.0-temporal-ready",
+  "feature_count": 13,
+  "features": [
+    "rpm",
+    "cht_c",
+    "egt_c",
+    "oil_press_bar",
+    "oil_temp_c",
+    "fuel_flow_lph",
+    "vibration_g",
+    "battery_v",
+    "injection_deg",
+    "cht_residual",
+    "egt_residual",
+    "oil_pressure_residual",
+    "vibration_residual"
+  ],
+  "anomaly_model": "IsolationForest",
+  "fault_model": "RandomForestClassifier",
+  "rul_model": "RandomForestRegressor",
+  "fault_classes": [
+    "abnormal_vibration",
+    "battery_alternator_health",
+    "coking_degradation",
+    "combustion_instability",
+    "healthy",
+    "injection_timing_issue",
+    "injector_abnormality",
+    "lubrication_issue",
+    "misfire",
+    "overheating",
+    "sensor_drift"
+  ],
+  "fault_count": 11,
+  "fault_accuracy_random_split": 0.9777272727272728,
+  "rul_mae_hours_random_split": 15.71240943422072,
+  "training_samples": 11000,
+  "healthy_samples": 1000,
+  "temporal_training_available": false,
+  "warning": "Metrics are dataset-dependent and do not represent validated aircraft-engine performance."
+}

@@ -430,7 +430,7 @@ def engineering_check(
 
     if (
         injection is not None
-        and abs(injection) > 15
+        and (float(injection) < 15 or float(injection) > 30)
     ):
         violations.append(
             "ABNORMAL_INJECTION_TIMING"

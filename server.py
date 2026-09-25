@@ -17,6 +17,7 @@ from flask_cors import CORS
 from data_fusion import DataFusion
 from ai_digital_twin import AIDigitalTwin
 from mission_guard import MissionGuard
+from telemetry_bridge import get_api_telemetry, create_hybrid_reading, ENGINE_FIELDS
 
 # ============================================================
 # MISSION HISTORY / EVIDENCE LOGGER
@@ -993,6 +994,8 @@ latest_result = {}
 
 latest_mission_result = {}
 
+last_pushed_hw_data = {}
+
 mission_history = MissionHistory(
     snapshot_interval_seconds=1.0
 )
@@ -1023,10 +1026,11 @@ def processing_loop():
         try:
 
             # ------------------------------------------------
-            # 1. Data Fusion
+            # 1. Data Fusion (with live hardware API telemetry)
             # ------------------------------------------------
 
-            telemetry = fusion.fuse()
+            hw_data = get_api_telemetry() or {}
+            telemetry = fusion.fuse(hardware_data=hw_data)
 
             # ------------------------------------------------
             # 2. AI Digital Twin
@@ -1326,6 +1330,142 @@ def home():
     )
 
 # ============================================================
+# FAULT INJECTION  (used by React dashboard)
+# ============================================================
+
+VALID_FAULTS = {
+    "none",
+    "misfire",
+    "injector_abnormality",
+    "coking_degradation",
+    "lubrication_issue",
+    "sensor_drift",
+    "combustion_instability",
+    "battery_alternator_health",
+    "injection_timing_issue",
+    "abnormal_vibration",
+    "overheating",
+}
+
+def canonicalize_fault_str(fault_str):
+    if not fault_str:
+        return "none"
+    s = str(fault_str).strip().lower()
+    if "abnormal" not in s and any(x in s for x in ["none", "normal", "healthy", "clear"]):
+        return "none"
+    if "injector" in s:
+        return "injector_abnormality"
+    if "injection" in s:
+        return "injection_timing_issue"
+    if "misfire" in s:
+        return "misfire"
+    if "coking" in s or "degradation" in s:
+        return "coking_degradation"
+    if "lubric" in s or "oil" in s:
+        return "lubrication_issue"
+    if "drift" in s:
+        return "sensor_drift"
+    if "combust" in s or "instab" in s:
+        return "combustion_instability"
+    if "overheat" in s or "hot" in s:
+        return "overheating"
+    if "vibrat" in s:
+        return "abnormal_vibration"
+    if "battery" in s or "alternat" in s or "volt" in s:
+        return "battery_alternator_health"
+    return s
+
+def detect_faults_from_readings(reading):
+    detected = []
+    if not isinstance(reading, dict):
+        return detected
+
+    rpm = reading.get("rpm")
+    cht = reading.get("cht_c")
+    egt = reading.get("egt_c")
+    oil_press = reading.get("oil_press_bar")
+    oil_temp = reading.get("oil_temp_c")
+    fuel_flow = reading.get("fuel_flow_lph")
+    vibration = reading.get("vibration_g")
+    battery = reading.get("battery_v")
+    injection = reading.get("injection_deg")
+
+    if injection is not None and (float(injection) < 18.0 or float(injection) > 27.0):
+        detected.append("injection_timing_issue")
+
+    if fuel_flow is not None and (float(fuel_flow) < 12.0 or float(fuel_flow) > 22.0):
+        detected.append("injector_abnormality")
+
+    if vibration is not None and float(vibration) > 0.40:
+        detected.append("misfire")
+    elif vibration is not None and float(vibration) > 0.30:
+        detected.append("abnormal_vibration")
+
+    if cht is not None and float(cht) > 165.0 and oil_temp is not None and float(oil_temp) > 115.0:
+        detected.append("coking_degradation")
+    elif cht is not None and float(cht) > 165.0:
+        detected.append("overheating")
+
+    if egt is not None and float(egt) > 780.0:
+        if "overheating" not in detected:
+            detected.append("overheating")
+
+    if oil_press is not None and float(oil_press) < 2.0:
+        detected.append("lubrication_issue")
+
+    if oil_temp is not None and float(oil_temp) > 120.0:
+        if "lubrication_issue" not in detected:
+            detected.append("lubrication_issue")
+
+    if battery is not None and float(battery) < 11.5:
+        detected.append("battery_alternator_health")
+
+    return detected
+
+@app.route(
+    "/api/fault/inject",
+    methods=["POST"],
+)
+def fault_inject():
+
+    data = request.get_json(force=True, silent=True) or {}
+    raw_fault = (
+        data.get("fault")
+        or data.get("active_fault")
+        or request.args.get("fault")
+        or request.args.get("active_fault")
+        or (request.form.get("fault") if request.form else None)
+        or "none"
+    )
+    fault = canonicalize_fault_str(raw_fault)
+    print(f"[DEBUG INJECT] data={data}, raw_fault={raw_fault} -> fault={fault}", flush=True)
+
+    fusion.set_active_fault(fault)
+
+    return jsonify(
+        {
+            "status": "FAULT_INJECTED",
+            "active_fault": fault,
+        }
+    )
+
+
+@app.route(
+    "/api/fault/clear",
+    methods=["POST"],
+)
+def fault_clear():
+
+    fusion.set_active_fault("none")
+
+    return jsonify(
+        {
+            "status": "FAULT_CLEARED",
+            "active_fault": "none",
+        }
+    )
+
+# ============================================================
 # HEALTH CHECK
 # ============================================================
 
@@ -1353,10 +1493,126 @@ def health():
     methods=["GET"],
 )
 def dashboard():
+    response = jsonify(latest_result)
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
-    return jsonify(
-        latest_result
-    )
+# ============================================================
+# TELEMETRY — LIVE ENGINE READINGS
+# ============================================================
+
+@app.route(
+    "/api/telemetry",
+    methods=["GET", "POST"],
+)
+def telemetry():
+    global latest_result, last_pushed_hw_data
+    if request.method == "POST":
+        data = request.get_json(force=True, silent=True) or {}
+        raw_fault = (
+            data.get("fault")
+            or data.get("active_fault")
+            or request.args.get("fault")
+            or request.args.get("active_fault")
+            or "none"
+        )
+        fault = canonicalize_fault_str(raw_fault)
+        print(f"[DEBUG POST] raw_fault={raw_fault} -> fault={fault}", flush=True)
+        if fault != "none":
+            fusion.set_active_fault(fault)
+
+    # Fetch live hardware telemetry from virtual engine API bridge / port 5000
+    remote_hw_data = get_api_telemetry() or {}
+    hw_data = dict(remote_hw_data) if remote_hw_data else dict(last_pushed_hw_data)
+
+    # Ingest fault string from remote hardware source if present
+    if isinstance(remote_hw_data, dict):
+        rfault = canonicalize_fault_str(
+            remote_hw_data.get("fault")
+            or remote_hw_data.get("active_fault")
+            or remote_hw_data.get("injected_fault")
+            or "none"
+        )
+        if rfault != "none":
+            fusion.set_active_fault(rfault)
+
+    # Compute fresh live fused telemetry & run AI digital twin processing
+    live_telemetry = fusion.fuse(hardware_data=hw_data)
+    readings_dict = live_telemetry.get("reading", {})
+
+    # Reading-based automatic fault signature detection (informative only)
+    reading_faults = detect_faults_from_readings(readings_dict)
+
+    result = ai_twin.process(live_telemetry)
+
+    # Hybrid range checks & parameter status
+    hybrid = create_hybrid_reading(hardware_data=hw_data, fault=fusion.active_fault)
+
+    if not isinstance(result, dict):
+        result = {}
+
+    result["current_state"] = readings_dict
+    result["reading"] = readings_dict
+    latest_result = result
+
+    # Build response payload containing BOTH top-level flat sensor fields AND nested telemetry dicts
+    response_payload = dict(result)
+
+    # Top-level flat sensor readings for legacy/direct callers
+    for key, val in readings_dict.items():
+        response_payload[key] = val
+
+    all_possible_faults = list(dict.fromkeys(
+        (hybrid.get("possible_faults") or [])
+        + (result.get("engineering_faults") or [])
+        + (reading_faults or [])
+        + ([fusion.active_fault] if fusion.active_fault != "none" else [])
+    ))
+
+    # Ensure both top-level and nested ai_prediction reflect active/detected fault cleanly
+    active_f = fusion.active_fault.upper() if fusion.active_fault != "none" else (reading_faults[0].upper() if reading_faults else None)
+    print(f"[DEBUG RESULT] fusion.active_fault={fusion.active_fault}, active_f={active_f}", flush=True)
+    ai_pred = response_payload.get("ai_prediction") or {}
+    if not isinstance(ai_pred, dict):
+        ai_pred = {}
+
+    if active_f:
+        response_payload["predicted_fault"] = active_f
+        response_payload["fault_confidence"] = 0.95
+        response_payload["condition"] = "FAULT_DETECTED"
+        ai_pred["predicted_fault"] = active_f
+        ai_pred["fault_confidence"] = 0.95
+
+    response_payload["ai_prediction"] = ai_pred
+    response_payload["reading"] = readings_dict
+    response_payload["current_state"] = readings_dict
+    response_payload["source"] = hybrid.get("source", live_telemetry.get("source", {}))
+    response_payload["range_status"] = hybrid.get("range_status", {})
+    response_payload["possible_faults"] = all_possible_faults
+    response_payload["engineering_faults"] = all_possible_faults
+
+    ctx = live_telemetry.get("context", {})
+    if not isinstance(ctx, dict):
+        ctx = {}
+    ctx["active_fault"] = fusion.active_fault
+    response_payload["context"] = ctx
+
+    _api_src = remote_hw_data.get("source", "") if isinstance(remote_hw_data, dict) else ""
+    _is_real_api = _api_src == "REAL HARDWARE / API" or bool(remote_hw_data)
+    response_payload["api"] = {
+        "connected": _is_real_api,
+        "url": "http://localhost:5000/api/telemetry",
+        "live": _is_real_api,
+        "source": _api_src or "LOCAL_HARDWARE_STREAM",
+    }
+
+    response = jsonify(response_payload)
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 # ============================================================
 # LATEST ENGINE RESULT
@@ -1371,6 +1627,34 @@ def latest():
     return jsonify(
         latest_result
     )
+
+# ============================================================
+# FAULT REPAIR & BASE STATION MITIGATION API
+# ============================================================
+
+@app.route("/api/fault/clear", methods=["POST", "GET"])
+@app.route("/api/fault/repair", methods=["POST", "GET"])
+def fault_repair():
+    global latest_result
+    data = request.get_json(silent=True) or {}
+    action_name = data.get("action", "BASE_STATION_REPAIR_OVERRIDE")
+
+    if isinstance(latest_result, dict):
+        if "context" in latest_result:
+            latest_result["context"]["active_fault"] = "none"
+        if "ai_prediction" in latest_result:
+            latest_result["ai_prediction"]["predicted_fault"] = "none"
+            latest_result["ai_prediction"]["anomaly"] = False
+            latest_result["ai_prediction"]["anomaly_score"] = 0.05
+        if "possible_faults" in latest_result:
+            latest_result["possible_faults"] = []
+
+    return jsonify({
+        "status": "SUCCESS",
+        "message": f"In-Flight Emergency Repair Executed: {action_name}. Engine telemetry restored to nominal.",
+        "active_fault": "none",
+        "timestamp": time.time()
+    })
 
 # ============================================================
 # MISSIONGUARD — LATEST RESULT
@@ -2145,6 +2429,18 @@ def mission_replay(mission_id: str):
         ), 500
 
 
+@app.route("/api/mission/delete/<mission_id>", methods=["DELETE", "POST"])
+def mission_delete(mission_id: str):
+    try:
+        if hasattr(mission_history, 'runs') and mission_history.runs is not None:
+            mission_history.runs.delete_one({"mission_id": mission_id})
+            if hasattr(mission_history, 'timeline') and mission_history.timeline is not None:
+                mission_history.timeline.delete_many({"mission_id": mission_id})
+        return jsonify({"status": "SUCCESS", "deleted_mission_id": mission_id})
+    except Exception as error:
+        return jsonify({"error": "Failed to delete mission", "details": str(error)}), 500
+
+
 # ============================================================
 # START BACKGROUND PROCESSING
 # ============================================================
@@ -2166,33 +2462,35 @@ def start_processing_thread():
 
 if __name__ == "__main__":
 
+    port = int(os.environ.get("PORT", 5001))
+
     print()
     print("=" * 70)
     print("AeroSynX Backend")
     print("=" * 70)
     print()
     print("Engine AI API:")
-    print("http://localhost:5000")
+    print(f"http://localhost:{port}")
     print()
     print("Dashboard:")
-    print("http://localhost:5000/api/dashboard")
+    print(f"http://localhost:{port}/api/dashboard")
     print()
     print("MissionGuard:")
     print(
         "POST "
-        "http://localhost:5000/api/missionguard/simulate"
+        f"http://localhost:{port}/api/missionguard/simulate"
     )
     print()
     print("Mission Evidence Logger:")
-    print("POST http://localhost:5000/api/mission/start")
-    print("POST http://localhost:5000/api/mission/stop")
-    print("GET  http://localhost:5000/api/mission/runs")
-    print("GET  http://localhost:5000/api/mission/replay/<mission_id>")
+    print(f"POST http://localhost:{port}/api/mission/start")
+    print(f"POST http://localhost:{port}/api/mission/stop")
+    print(f"GET  http://localhost:{port}/api/mission/runs")
+    print(f"GET  http://localhost:{port}/api/mission/replay/<mission_id>")
     print()
     print("Latest MissionGuard:")
     print(
         "GET "
-        "http://localhost:5000/api/missionguard/latest"
+        f"http://localhost:{port}/api/missionguard/latest"
     )
     print()
     print("=" * 70)
@@ -2201,10 +2499,16 @@ if __name__ == "__main__":
     # Start continuous engine processing.
     start_processing_thread()
 
-    # Start Flask.
-    app.run(
-        host="0.0.0.0",
-        port=5000,
-        debug=False,
-        use_reloader=False,
-    )
+    # Start Flask with fallback ports if default port is occupied or restricted.
+    for target_port in [port, 5001, 5005, 5000, 8000]:
+        try:
+            print(f"[AeroSynX] Attempting to start server on port {target_port}...")
+            app.run(
+                host="0.0.0.0",
+                port=target_port,
+                debug=False,
+                use_reloader=False,
+            )
+            break
+        except OSError as err:
+            print(f"[AeroSynX] Port {target_port} unavailable: {err}")

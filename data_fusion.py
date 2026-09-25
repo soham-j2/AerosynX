@@ -58,6 +58,38 @@ class DataFusion:
         }
 
         self.degradation = 0.0
+        self.active_fault = "none"
+
+    def canonicalize_fault(self, fault_name):
+        if not fault_name:
+            return "none"
+        s = str(fault_name).strip().lower()
+        if "abnormal" not in s and any(x in s for x in ["none", "normal", "healthy", "clear"]):
+            return "none"
+        if "injector" in s:
+            return "injector_abnormality"
+        if "injection" in s:
+            return "injection_timing_issue"
+        if "misfire" in s:
+            return "misfire"
+        if "coking" in s or "degradation" in s:
+            return "coking_degradation"
+        if "lubric" in s or "oil" in s:
+            return "lubrication_issue"
+        if "drift" in s:
+            return "sensor_drift"
+        if "combust" in s or "instab" in s:
+            return "combustion_instability"
+        if "overheat" in s or "hot" in s:
+            return "overheating"
+        if "vibrat" in s:
+            return "abnormal_vibration"
+        if "battery" in s or "alternat" in s or "volt" in s:
+            return "battery_alternator_health"
+        return s
+
+    def set_active_fault(self, fault_name):
+        self.active_fault = self.canonicalize_fault(fault_name)
 
     @staticmethod
     def valid(value):
@@ -247,6 +279,36 @@ class DataFusion:
             + degradation * 20.0
         )
 
+        if hasattr(self, "active_fault") and self.active_fault and self.active_fault != "none":
+            fault = self.active_fault
+            if fault == "misfire":
+                vibration += 0.45
+                rpm -= 550.0
+                egt += 110.0
+            elif fault == "injector_abnormality":
+                fuel_flow -= 4.5
+                egt += 75.0
+            elif fault == "coking_degradation":
+                cht += 48.0
+                oil_temp += 22.0
+            elif fault == "lubrication_issue":
+                oil_pressure -= 1.8
+                oil_temp += 32.0
+            elif fault == "sensor_drift":
+                battery -= 3.2
+            elif fault == "combustion_instability":
+                vibration += 0.38
+                rpm += self.random.uniform(-300.0, 300.0)
+            elif fault == "battery_alternator_health":
+                battery = 10.6
+            elif fault == "injection_timing_issue":
+                injection = 32.5
+            elif fault == "overheating":
+                cht += 55.0
+                egt += 95.0
+            elif fault == "abnormal_vibration":
+                vibration += 0.26
+
         return {
             "rpm": rpm,
             "cht_c": cht,
@@ -296,6 +358,15 @@ class DataFusion:
         )
 
         for parameter in all_parameters:
+            if self.active_fault != "none" and parameter in generated:
+                sim_val = generated[parameter]
+                norm_min, norm_max = self.NORMAL_RANGES.get(parameter, (None, None))
+                if norm_min is not None and (sim_val < norm_min or sim_val > norm_max):
+                    final_data[parameter] = float(sim_val)
+                    source[parameter] = "SIMULATED_FAULT"
+                    quality[parameter] = "GENERATED"
+                    continue
+
             hardware_value = hardware_data.get(parameter)
 
             if self.valid(hardware_value):
@@ -325,8 +396,7 @@ class DataFusion:
             )
 
             source[parameter] = "OPERATING_CONTEXT"
-            quality[parameter] = "CONTEXT"
-
+        context["active_fault"] = getattr(self, "active_fault", "none")
         timestamp = int(time.time() * 1000)
 
         return {
