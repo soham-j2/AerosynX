@@ -1,24 +1,25 @@
 {
-  "created_at": 1790355489.8232393,
-  "mission_id": "MISSION-1790354292",
+  "created_at": 1790502481.738241,
+  "mission_id": "MISSION-1790502012",
   "mission_input": {
     "altitude_ft": 5000,
     "ambient_temp_c": 25,
-    "duration_min": 60,
+    "duration_min": 5,
     "load_percent": 60,
     "loiter_min": 10,
-    "mission_id": "MISSION-1790354292",
+    "mission_id": "MISSION-1790502012",
+    "name": "PATROL MISSION DELTA - 01",
     "throttle_percent": 65
   },
-  "mission_margin": 46.76,
+  "mission_margin": 45.86,
   "recommendation": "CONTINUE",
   "recommendation_details": {
     "action": "Continue the planned mission while monitoring live engine telemetry.",
     "code": "CONTINUE",
     "evidence": [
-      "Mission margin: 46.76",
-      "Engine health: 92.1/100",
-      "Degradation: 27.1/100"
+      "Mission margin: 45.86",
+      "Engine health: 94.8/100",
+      "Degradation: 19.5/100"
     ],
     "label": "Continue",
     "reason": "No critical engine or mission constraint was identified in the simulated mission.",
@@ -26,55 +27,55 @@
   },
   "engine_capability_envelope": {
     "allowable_load": {
-      "allowable_percent": 67.61,
+      "allowable_percent": 68.37,
       "basis": "Heuristic prototype relationship using thermal margin, vibration margin, health and degradation reserve.",
-      "condition_factor_percent": 28.03,
+      "condition_factor_percent": 29.7,
       "current_percent": 60,
-      "margin_percent": 11.26,
+      "margin_percent": 12.24,
       "source": "MODEL_DERIVED"
     },
     "available_rpm": {
-      "allowable": 5136.36,
+      "allowable": 5156.4,
       "basis": "Prototype reference RPM limit combined with current engine condition.",
-      "current": 5107.9,
-      "margin_to_allowable_percent": 0.55,
+      "current": 5057.7,
+      "margin_to_allowable_percent": 1.91,
       "reference_max": 6000,
       "source": "HARDWARE",
-      "utilization_percent": 85.13
+      "utilization_percent": 84.3
     },
     "basis": "Prototype engine capability envelope derived from current telemetry, Digital Twin estimates, AI health/degradation and predicted endurance.",
     "certification_note": "Prototype/model-derived estimate. Not a certified engine operating envelope. Reference RPM/load limits must be replaced with validated engine-specific data before operational use.",
     "degradation": {
-      "level": "MODERATE",
-      "reserve_percent": 72.95,
-      "score": 27.05,
+      "level": "LOW",
+      "reserve_percent": 80.54,
+      "score": 19.46,
       "source": "AI_TEMPORAL_ANALYSIS",
       "trajectory": "IMPROVING"
     },
     "mission_constrained": {
-      "allowable_load_percent": 65.65,
-      "allowable_rpm": 5084.04,
-      "capability_percent": 45.3,
-      "load_margin_percent": 8.61,
-      "rpm_margin_percent": 0,
+      "allowable_load_percent": 66.73,
+      "allowable_rpm": 5112.72,
+      "capability_percent": 48.78,
+      "load_margin_percent": 10.08,
+      "rpm_margin_percent": 1.08,
       "status": "LIMITED",
-      "thermal_margin_percent": 23.67,
-      "vibration_margin_percent": 62.8,
+      "thermal_margin_percent": 26.06,
+      "vibration_margin_percent": 68.6,
       "worst_checkpoint": {
         "checkpoint": 1,
-        "margin_percent": 17.11,
+        "margin_percent": 18.5,
         "parameter": "egt_c",
         "phase": "TAKEOFF",
-        "value": 704.535
+        "value": 692.722
       }
     },
-    "overall_capability_percent": 51.65,
+    "overall_capability_percent": 54.45,
     "predicted_endurance": {
       "basis": "Predicted Remaining Useful Life from the existing AI RUL model.",
-      "endurance_margin_percent": 99.75,
-      "mission_duration_hours": 1,
-      "remaining_after_mission_hours": 399.78,
-      "rul_hours": 400.78,
+      "endurance_margin_percent": 99.98,
+      "mission_duration_hours": 0.08,
+      "remaining_after_mission_hours": 436.93,
+      "rul_hours": 437.02,
       "source": "AI_RUL_MODEL"
     },
     "provenance": {
@@ -106,34 +107,34 @@
     "thermal_margin": {
       "basis": "Weighted critical-limit margin: CHT 40%, EGT 40%, oil temperature 20%.",
       "cht": {
-        "current": 115.3,
+        "current": 110,
         "limit": 180,
-        "margin": 64.7,
-        "margin_percent": 35.94,
+        "margin": 70,
+        "margin_percent": 38.89,
         "source": "HARDWARE"
       },
       "egt": {
-        "current": 673.6,
+        "current": 667.1,
         "limit": 850,
-        "margin": 176.4,
-        "margin_percent": 20.75,
+        "margin": 182.9,
+        "margin_percent": 21.52,
         "source": "HARDWARE"
       },
       "margin_semantics": "Percentage represents normalized distance from the critical limit; it is not a certified operating limit or warning-threshold score.",
       "oil_temperature": {
-        "current": 95.2,
+        "current": 94,
         "limit": 130,
-        "margin": 34.8,
-        "margin_percent": 26.77,
+        "margin": 36,
+        "margin_percent": 27.69,
         "source": "HARDWARE"
       },
-      "overall_percent": 28.03
+      "overall_percent": 29.7
     },
     "vibration_margin": {
-      "current_g": 0.097,
+      "current_g": 0.082,
       "limit_g": 0.5,
-      "margin_g": 0.403,
-      "margin_percent": 80.6,
+      "margin_g": 0.418,
+      "margin_percent": 83.6,
       "margin_semantics": "Normalized distance from the critical vibration limit.",
       "source": "HARDWARE"
     }
@@ -150,24 +151,24 @@
             "throttle_percent": 85
           },
           "engine_state": {
-            "battery_v": 13.831,
-            "cht_c": 123.369,
-            "egt_c": 704.535,
-            "fuel_flow": 1.061,
-            "oil_press_bar": 2.884,
-            "oil_temp_c": 102.458,
-            "rpm": 5107.9,
-            "vibration_g": 0.186
+            "battery_v": 13.874,
+            "cht_c": 116.703,
+            "egt_c": 692.722,
+            "fuel_flow": 1.049,
+            "oil_press_bar": 3.214,
+            "oil_temp_c": 100.119,
+            "rpm": 5057.7,
+            "vibration_g": 0.157
           },
           "parameters": [
             {
               "critical": false,
               "critical_limit": 180,
               "direction": "HIGH",
-              "margin": 56.631,
+              "margin": 63.297,
               "parameter": "cht_c",
               "unit": "\u00b0C",
-              "value": 123.369,
+              "value": 116.703,
               "warning": false,
               "warning_limit": 165
             },
@@ -175,10 +176,10 @@
               "critical": false,
               "critical_limit": 850,
               "direction": "HIGH",
-              "margin": 145.465,
+              "margin": 157.278,
               "parameter": "egt_c",
               "unit": "\u00b0C",
-              "value": 704.535,
+              "value": 692.722,
               "warning": false,
               "warning_limit": 780
             },
@@ -186,10 +187,10 @@
               "critical": false,
               "critical_limit": 1.5,
               "direction": "LOW",
-              "margin": 1.384,
+              "margin": 1.714,
               "parameter": "oil_press_bar",
               "unit": "bar",
-              "value": 2.884,
+              "value": 3.214,
               "warning": false,
               "warning_limit": 2
             },
@@ -197,10 +198,10 @@
               "critical": false,
               "critical_limit": 130,
               "direction": "HIGH",
-              "margin": 27.542,
+              "margin": 29.881,
               "parameter": "oil_temp_c",
               "unit": "\u00b0C",
-              "value": 102.458,
+              "value": 100.119,
               "warning": false,
               "warning_limit": 120
             },
@@ -208,10 +209,10 @@
               "critical": false,
               "critical_limit": 0.5,
               "direction": "HIGH",
-              "margin": 0.314,
+              "margin": 0.343,
               "parameter": "vibration_g",
               "unit": "g",
-              "value": 0.186,
+              "value": 0.157,
               "warning": false,
               "warning_limit": 0.3
             },
@@ -219,10 +220,10 @@
               "critical": false,
               "critical_limit": 10.5,
               "direction": "LOW",
-              "margin": 3.331,
+              "margin": 3.374,
               "parameter": "battery_v",
               "unit": "V",
-              "value": 13.831,
+              "value": 13.874,
               "warning": false,
               "warning_limit": 11.5
             }
@@ -239,24 +240,24 @@
             "throttle_percent": 85
           },
           "engine_state": {
-            "battery_v": 13.831,
-            "cht_c": 123.369,
-            "egt_c": 704.535,
-            "fuel_flow": 1.061,
-            "oil_press_bar": 2.884,
-            "oil_temp_c": 102.458,
-            "rpm": 5107.9,
-            "vibration_g": 0.186
+            "battery_v": 13.874,
+            "cht_c": 116.703,
+            "egt_c": 692.722,
+            "fuel_flow": 1.049,
+            "oil_press_bar": 3.214,
+            "oil_temp_c": 100.119,
+            "rpm": 5057.7,
+            "vibration_g": 0.157
           },
           "parameters": [
             {
               "critical": false,
               "critical_limit": 180,
               "direction": "HIGH",
-              "margin": 56.631,
+              "margin": 63.297,
               "parameter": "cht_c",
               "unit": "\u00b0C",
-              "value": 123.369,
+              "value": 116.703,
               "warning": false,
               "warning_limit": 165
             },
@@ -264,10 +265,10 @@
               "critical": false,
               "critical_limit": 850,
               "direction": "HIGH",
-              "margin": 145.465,
+              "margin": 157.278,
               "parameter": "egt_c",
               "unit": "\u00b0C",
-              "value": 704.535,
+              "value": 692.722,
               "warning": false,
               "warning_limit": 780
             },
@@ -275,10 +276,10 @@
               "critical": false,
               "critical_limit": 1.5,
               "direction": "LOW",
-              "margin": 1.384,
+              "margin": 1.714,
               "parameter": "oil_press_bar",
               "unit": "bar",
-              "value": 2.884,
+              "value": 3.214,
               "warning": false,
               "warning_limit": 2
             },
@@ -286,10 +287,10 @@
               "critical": false,
               "critical_limit": 130,
               "direction": "HIGH",
-              "margin": 27.542,
+              "margin": 29.881,
               "parameter": "oil_temp_c",
               "unit": "\u00b0C",
-              "value": 102.458,
+              "value": 100.119,
               "warning": false,
               "warning_limit": 120
             },
@@ -297,10 +298,10 @@
               "critical": false,
               "critical_limit": 0.5,
               "direction": "HIGH",
-              "margin": 0.314,
+              "margin": 0.343,
               "parameter": "vibration_g",
               "unit": "g",
-              "value": 0.186,
+              "value": 0.157,
               "warning": false,
               "warning_limit": 0.3
             },
@@ -308,10 +309,10 @@
               "critical": false,
               "critical_limit": 10.5,
               "direction": "LOW",
-              "margin": 3.331,
+              "margin": 3.374,
               "parameter": "battery_v",
               "unit": "V",
-              "value": 13.831,
+              "value": 13.874,
               "warning": false,
               "warning_limit": 11.5
             }
@@ -328,24 +329,24 @@
             "throttle_percent": 85
           },
           "engine_state": {
-            "battery_v": 13.831,
-            "cht_c": 123.369,
-            "egt_c": 704.535,
-            "fuel_flow": 1.061,
-            "oil_press_bar": 2.884,
-            "oil_temp_c": 102.458,
-            "rpm": 5107.9,
-            "vibration_g": 0.186
+            "battery_v": 13.874,
+            "cht_c": 116.703,
+            "egt_c": 692.722,
+            "fuel_flow": 1.049,
+            "oil_press_bar": 3.214,
+            "oil_temp_c": 100.119,
+            "rpm": 5057.7,
+            "vibration_g": 0.157
           },
           "parameters": [
             {
               "critical": false,
               "critical_limit": 180,
               "direction": "HIGH",
-              "margin": 56.631,
+              "margin": 63.297,
               "parameter": "cht_c",
               "unit": "\u00b0C",
-              "value": 123.369,
+              "value": 116.703,
               "warning": false,
               "warning_limit": 165
             },
@@ -353,10 +354,10 @@
               "critical": false,
               "critical_limit": 850,
               "direction": "HIGH",
-              "margin": 145.465,
+              "margin": 157.278,
               "parameter": "egt_c",
               "unit": "\u00b0C",
-              "value": 704.535,
+              "value": 692.722,
               "warning": false,
               "warning_limit": 780
             },
@@ -364,10 +365,10 @@
               "critical": false,
               "critical_limit": 1.5,
               "direction": "LOW",
-              "margin": 1.384,
+              "margin": 1.714,
               "parameter": "oil_press_bar",
               "unit": "bar",
-              "value": 2.884,
+              "value": 3.214,
               "warning": false,
               "warning_limit": 2
             },
@@ -375,10 +376,10 @@
               "critical": false,
               "critical_limit": 130,
               "direction": "HIGH",
-              "margin": 27.542,
+              "margin": 29.881,
               "parameter": "oil_temp_c",
               "unit": "\u00b0C",
-              "value": 102.458,
+              "value": 100.119,
               "warning": false,
               "warning_limit": 120
             },
@@ -386,10 +387,10 @@
               "critical": false,
               "critical_limit": 0.5,
               "direction": "HIGH",
-              "margin": 0.314,
+              "margin": 0.343,
               "parameter": "vibration_g",
               "unit": "g",
-              "value": 0.186,
+              "value": 0.157,
               "warning": false,
               "warning_limit": 0.3
             },
@@ -397,10 +398,10 @@
               "critical": false,
               "critical_limit": 10.5,
               "direction": "LOW",
-              "margin": 3.331,
+              "margin": 3.374,
               "parameter": "battery_v",
               "unit": "V",
-              "value": 13.831,
+              "value": 13.874,
               "warning": false,
               "warning_limit": 11.5
             }
@@ -409,8 +410,8 @@
           "stress_score": 51.56
         }
       ],
-      "duration_min": 3,
-      "minimum_margin": 0.314,
+      "duration_min": 0.25,
+      "minimum_margin": 0.343,
       "phase": "TAKEOFF",
       "stress_score": 51.56
     },
@@ -425,838 +426,13 @@
             "throttle_percent": 75
           },
           "engine_state": {
-            "battery_v": 13.841,
-            "cht_c": 122.947,
-            "egt_c": 702.952,
-            "fuel_flow": 1.058,
-            "oil_press_bar": 2.899,
-            "oil_temp_c": 102.035,
-            "rpm": 5107.9,
-            "vibration_g": 0.18
-          },
-          "parameters": [
-            {
-              "critical": false,
-              "critical_limit": 180,
-              "direction": "HIGH",
-              "margin": 57.053,
-              "parameter": "cht_c",
-              "unit": "\u00b0C",
-              "value": 122.947,
-              "warning": false,
-              "warning_limit": 165
-            },
-            {
-              "critical": false,
-              "critical_limit": 850,
-              "direction": "HIGH",
-              "margin": 147.048,
-              "parameter": "egt_c",
-              "unit": "\u00b0C",
-              "value": 702.952,
-              "warning": false,
-              "warning_limit": 780
-            },
-            {
-              "critical": false,
-              "critical_limit": 1.5,
-              "direction": "LOW",
-              "margin": 1.399,
-              "parameter": "oil_press_bar",
-              "unit": "bar",
-              "value": 2.899,
-              "warning": false,
-              "warning_limit": 2
-            },
-            {
-              "critical": false,
-              "critical_limit": 130,
-              "direction": "HIGH",
-              "margin": 27.965,
-              "parameter": "oil_temp_c",
-              "unit": "\u00b0C",
-              "value": 102.035,
-              "warning": false,
-              "warning_limit": 120
-            },
-            {
-              "critical": false,
-              "critical_limit": 0.5,
-              "direction": "HIGH",
-              "margin": 0.32,
-              "parameter": "vibration_g",
-              "unit": "g",
-              "value": 0.18,
-              "warning": false,
-              "warning_limit": 0.3
-            },
-            {
-              "critical": false,
-              "critical_limit": 10.5,
-              "direction": "LOW",
-              "margin": 3.341,
-              "parameter": "battery_v",
-              "unit": "V",
-              "value": 13.841,
-              "warning": false,
-              "warning_limit": 11.5
-            }
-          ],
-          "progress": 0.333,
-          "stress_score": 51.65
-        },
-        {
-          "checkpoint": 2,
-          "conditions": {
-            "altitude_ft": 3916.667,
-            "ambient_temp_c": 25,
-            "load_percent": 70,
-            "throttle_percent": 75
-          },
-          "engine_state": {
-            "battery_v": 13.838,
-            "cht_c": 123.091,
-            "egt_c": 703.493,
-            "fuel_flow": 1.059,
-            "oil_press_bar": 2.894,
-            "oil_temp_c": 102.18,
-            "rpm": 5107.9,
-            "vibration_g": 0.182
-          },
-          "parameters": [
-            {
-              "critical": false,
-              "critical_limit": 180,
-              "direction": "HIGH",
-              "margin": 56.909,
-              "parameter": "cht_c",
-              "unit": "\u00b0C",
-              "value": 123.091,
-              "warning": false,
-              "warning_limit": 165
-            },
-            {
-              "critical": false,
-              "critical_limit": 850,
-              "direction": "HIGH",
-              "margin": 146.507,
-              "parameter": "egt_c",
-              "unit": "\u00b0C",
-              "value": 703.493,
-              "warning": false,
-              "warning_limit": 780
-            },
-            {
-              "critical": false,
-              "critical_limit": 1.5,
-              "direction": "LOW",
-              "margin": 1.394,
-              "parameter": "oil_press_bar",
-              "unit": "bar",
-              "value": 2.894,
-              "warning": false,
-              "warning_limit": 2
-            },
-            {
-              "critical": false,
-              "critical_limit": 130,
-              "direction": "HIGH",
-              "margin": 27.82,
-              "parameter": "oil_temp_c",
-              "unit": "\u00b0C",
-              "value": 102.18,
-              "warning": false,
-              "warning_limit": 120
-            },
-            {
-              "critical": false,
-              "critical_limit": 0.5,
-              "direction": "HIGH",
-              "margin": 0.318,
-              "parameter": "vibration_g",
-              "unit": "g",
-              "value": 0.182,
-              "warning": false,
-              "warning_limit": 0.3
-            },
-            {
-              "critical": false,
-              "critical_limit": 10.5,
-              "direction": "LOW",
-              "margin": 3.338,
-              "parameter": "battery_v",
-              "unit": "V",
-              "value": 13.838,
-              "warning": false,
-              "warning_limit": 11.5
-            }
-          ],
-          "progress": 0.667,
-          "stress_score": 53.91
-        },
-        {
-          "checkpoint": 3,
-          "conditions": {
-            "altitude_ft": 5000,
-            "ambient_temp_c": 25,
-            "load_percent": 70,
-            "throttle_percent": 75
-          },
-          "engine_state": {
-            "battery_v": 13.834,
-            "cht_c": 123.236,
-            "egt_c": 704.035,
-            "fuel_flow": 1.06,
-            "oil_press_bar": 2.889,
-            "oil_temp_c": 102.324,
-            "rpm": 5107.9,
-            "vibration_g": 0.184
-          },
-          "parameters": [
-            {
-              "critical": false,
-              "critical_limit": 180,
-              "direction": "HIGH",
-              "margin": 56.764,
-              "parameter": "cht_c",
-              "unit": "\u00b0C",
-              "value": 123.236,
-              "warning": false,
-              "warning_limit": 165
-            },
-            {
-              "critical": false,
-              "critical_limit": 850,
-              "direction": "HIGH",
-              "margin": 145.965,
-              "parameter": "egt_c",
-              "unit": "\u00b0C",
-              "value": 704.035,
-              "warning": false,
-              "warning_limit": 780
-            },
-            {
-              "critical": false,
-              "critical_limit": 1.5,
-              "direction": "LOW",
-              "margin": 1.389,
-              "parameter": "oil_press_bar",
-              "unit": "bar",
-              "value": 2.889,
-              "warning": false,
-              "warning_limit": 2
-            },
-            {
-              "critical": false,
-              "critical_limit": 130,
-              "direction": "HIGH",
-              "margin": 27.676,
-              "parameter": "oil_temp_c",
-              "unit": "\u00b0C",
-              "value": 102.324,
-              "warning": false,
-              "warning_limit": 120
-            },
-            {
-              "critical": false,
-              "critical_limit": 0.5,
-              "direction": "HIGH",
-              "margin": 0.316,
-              "parameter": "vibration_g",
-              "unit": "g",
-              "value": 0.184,
-              "warning": false,
-              "warning_limit": 0.3
-            },
-            {
-              "critical": false,
-              "critical_limit": 10.5,
-              "direction": "LOW",
-              "margin": 3.334,
-              "parameter": "battery_v",
-              "unit": "V",
-              "value": 13.834,
-              "warning": false,
-              "warning_limit": 11.5
-            }
-          ],
-          "progress": 1,
-          "stress_score": 56.17
-        }
-      ],
-      "duration_min": 7.2,
-      "minimum_margin": 0.316,
-      "phase": "CLIMB",
-      "stress_score": 53.91
-    },
-    {
-      "checkpoints": [
-        {
-          "checkpoint": 1,
-          "conditions": {
-            "altitude_ft": 5000,
-            "ambient_temp_c": 25,
-            "load_percent": 60,
-            "throttle_percent": 65
-          },
-          "engine_state": {
-            "battery_v": 13.889,
-            "cht_c": 121.036,
-            "egt_c": 695.785,
-            "fuel_flow": 1.046,
-            "oil_press_bar": 2.971,
-            "oil_temp_c": 100.124,
-            "rpm": 5107.9,
-            "vibration_g": 0.157
-          },
-          "parameters": [
-            {
-              "critical": false,
-              "critical_limit": 180,
-              "direction": "HIGH",
-              "margin": 58.964,
-              "parameter": "cht_c",
-              "unit": "\u00b0C",
-              "value": 121.036,
-              "warning": false,
-              "warning_limit": 165
-            },
-            {
-              "critical": false,
-              "critical_limit": 850,
-              "direction": "HIGH",
-              "margin": 154.215,
-              "parameter": "egt_c",
-              "unit": "\u00b0C",
-              "value": 695.785,
-              "warning": false,
-              "warning_limit": 780
-            },
-            {
-              "critical": false,
-              "critical_limit": 1.5,
-              "direction": "LOW",
-              "margin": 1.471,
-              "parameter": "oil_press_bar",
-              "unit": "bar",
-              "value": 2.971,
-              "warning": false,
-              "warning_limit": 2
-            },
-            {
-              "critical": false,
-              "critical_limit": 130,
-              "direction": "HIGH",
-              "margin": 29.876,
-              "parameter": "oil_temp_c",
-              "unit": "\u00b0C",
-              "value": 100.124,
-              "warning": false,
-              "warning_limit": 120
-            },
-            {
-              "critical": false,
-              "critical_limit": 0.5,
-              "direction": "HIGH",
-              "margin": 0.343,
-              "parameter": "vibration_g",
-              "unit": "g",
-              "value": 0.157,
-              "warning": false,
-              "warning_limit": 0.3
-            },
-            {
-              "critical": false,
-              "critical_limit": 10.5,
-              "direction": "LOW",
-              "margin": 3.389,
-              "parameter": "battery_v",
-              "unit": "V",
-              "value": 13.889,
-              "warning": false,
-              "warning_limit": 11.5
-            }
-          ],
-          "progress": 0.333,
-          "stress_score": 50.17
-        },
-        {
-          "checkpoint": 2,
-          "conditions": {
-            "altitude_ft": 5000,
-            "ambient_temp_c": 25,
-            "load_percent": 60,
-            "throttle_percent": 65
-          },
-          "engine_state": {
-            "battery_v": 13.889,
-            "cht_c": 121.036,
-            "egt_c": 695.785,
-            "fuel_flow": 1.046,
-            "oil_press_bar": 2.971,
-            "oil_temp_c": 100.124,
-            "rpm": 5107.9,
-            "vibration_g": 0.157
-          },
-          "parameters": [
-            {
-              "critical": false,
-              "critical_limit": 180,
-              "direction": "HIGH",
-              "margin": 58.964,
-              "parameter": "cht_c",
-              "unit": "\u00b0C",
-              "value": 121.036,
-              "warning": false,
-              "warning_limit": 165
-            },
-            {
-              "critical": false,
-              "critical_limit": 850,
-              "direction": "HIGH",
-              "margin": 154.215,
-              "parameter": "egt_c",
-              "unit": "\u00b0C",
-              "value": 695.785,
-              "warning": false,
-              "warning_limit": 780
-            },
-            {
-              "critical": false,
-              "critical_limit": 1.5,
-              "direction": "LOW",
-              "margin": 1.471,
-              "parameter": "oil_press_bar",
-              "unit": "bar",
-              "value": 2.971,
-              "warning": false,
-              "warning_limit": 2
-            },
-            {
-              "critical": false,
-              "critical_limit": 130,
-              "direction": "HIGH",
-              "margin": 29.876,
-              "parameter": "oil_temp_c",
-              "unit": "\u00b0C",
-              "value": 100.124,
-              "warning": false,
-              "warning_limit": 120
-            },
-            {
-              "critical": false,
-              "critical_limit": 0.5,
-              "direction": "HIGH",
-              "margin": 0.343,
-              "parameter": "vibration_g",
-              "unit": "g",
-              "value": 0.157,
-              "warning": false,
-              "warning_limit": 0.3
-            },
-            {
-              "critical": false,
-              "critical_limit": 10.5,
-              "direction": "LOW",
-              "margin": 3.389,
-              "parameter": "battery_v",
-              "unit": "V",
-              "value": 13.889,
-              "warning": false,
-              "warning_limit": 11.5
-            }
-          ],
-          "progress": 0.667,
-          "stress_score": 50.17
-        },
-        {
-          "checkpoint": 3,
-          "conditions": {
-            "altitude_ft": 5000,
-            "ambient_temp_c": 25,
-            "load_percent": 60,
-            "throttle_percent": 65
-          },
-          "engine_state": {
-            "battery_v": 13.889,
-            "cht_c": 121.036,
-            "egt_c": 695.785,
-            "fuel_flow": 1.046,
-            "oil_press_bar": 2.971,
-            "oil_temp_c": 100.124,
-            "rpm": 5107.9,
-            "vibration_g": 0.157
-          },
-          "parameters": [
-            {
-              "critical": false,
-              "critical_limit": 180,
-              "direction": "HIGH",
-              "margin": 58.964,
-              "parameter": "cht_c",
-              "unit": "\u00b0C",
-              "value": 121.036,
-              "warning": false,
-              "warning_limit": 165
-            },
-            {
-              "critical": false,
-              "critical_limit": 850,
-              "direction": "HIGH",
-              "margin": 154.215,
-              "parameter": "egt_c",
-              "unit": "\u00b0C",
-              "value": 695.785,
-              "warning": false,
-              "warning_limit": 780
-            },
-            {
-              "critical": false,
-              "critical_limit": 1.5,
-              "direction": "LOW",
-              "margin": 1.471,
-              "parameter": "oil_press_bar",
-              "unit": "bar",
-              "value": 2.971,
-              "warning": false,
-              "warning_limit": 2
-            },
-            {
-              "critical": false,
-              "critical_limit": 130,
-              "direction": "HIGH",
-              "margin": 29.876,
-              "parameter": "oil_temp_c",
-              "unit": "\u00b0C",
-              "value": 100.124,
-              "warning": false,
-              "warning_limit": 120
-            },
-            {
-              "critical": false,
-              "critical_limit": 0.5,
-              "direction": "HIGH",
-              "margin": 0.343,
-              "parameter": "vibration_g",
-              "unit": "g",
-              "value": 0.157,
-              "warning": false,
-              "warning_limit": 0.3
-            },
-            {
-              "critical": false,
-              "critical_limit": 10.5,
-              "direction": "LOW",
-              "margin": 3.389,
-              "parameter": "battery_v",
-              "unit": "V",
-              "value": 13.889,
-              "warning": false,
-              "warning_limit": 11.5
-            }
-          ],
-          "progress": 1,
-          "stress_score": 50.17
-        }
-      ],
-      "duration_min": 27.54,
-      "minimum_margin": 0.343,
-      "phase": "CRUISE",
-      "stress_score": 50.17
-    },
-    {
-      "checkpoints": [
-        {
-          "checkpoint": 1,
-          "conditions": {
-            "altitude_ft": 5000,
-            "ambient_temp_c": 25,
-            "load_percent": 50,
-            "throttle_percent": 55
-          },
-          "engine_state": {
             "battery_v": 13.884,
-            "cht_c": 121.236,
-            "egt_c": 696.535,
+            "cht_c": 116.281,
+            "egt_c": 691.139,
             "fuel_flow": 1.047,
-            "oil_press_bar": 2.964,
-            "oil_temp_c": 100.324,
-            "rpm": 5107.9,
-            "vibration_g": 0.159
-          },
-          "parameters": [
-            {
-              "critical": false,
-              "critical_limit": 180,
-              "direction": "HIGH",
-              "margin": 58.764,
-              "parameter": "cht_c",
-              "unit": "\u00b0C",
-              "value": 121.236,
-              "warning": false,
-              "warning_limit": 165
-            },
-            {
-              "critical": false,
-              "critical_limit": 850,
-              "direction": "HIGH",
-              "margin": 153.465,
-              "parameter": "egt_c",
-              "unit": "\u00b0C",
-              "value": 696.535,
-              "warning": false,
-              "warning_limit": 780
-            },
-            {
-              "critical": false,
-              "critical_limit": 1.5,
-              "direction": "LOW",
-              "margin": 1.464,
-              "parameter": "oil_press_bar",
-              "unit": "bar",
-              "value": 2.964,
-              "warning": false,
-              "warning_limit": 2
-            },
-            {
-              "critical": false,
-              "critical_limit": 130,
-              "direction": "HIGH",
-              "margin": 29.676,
-              "parameter": "oil_temp_c",
-              "unit": "\u00b0C",
-              "value": 100.324,
-              "warning": false,
-              "warning_limit": 120
-            },
-            {
-              "critical": false,
-              "critical_limit": 0.5,
-              "direction": "HIGH",
-              "margin": 0.341,
-              "parameter": "vibration_g",
-              "unit": "g",
-              "value": 0.159,
-              "warning": false,
-              "warning_limit": 0.3
-            },
-            {
-              "critical": false,
-              "critical_limit": 10.5,
-              "direction": "LOW",
-              "margin": 3.384,
-              "parameter": "battery_v",
-              "unit": "V",
-              "value": 13.884,
-              "warning": false,
-              "warning_limit": 11.5
-            }
-          ],
-          "progress": 0.333,
-          "stress_score": 44.17
-        },
-        {
-          "checkpoint": 2,
-          "conditions": {
-            "altitude_ft": 5000,
-            "ambient_temp_c": 25,
-            "load_percent": 50,
-            "throttle_percent": 55
-          },
-          "engine_state": {
-            "battery_v": 13.884,
-            "cht_c": 121.236,
-            "egt_c": 696.535,
-            "fuel_flow": 1.047,
-            "oil_press_bar": 2.964,
-            "oil_temp_c": 100.324,
-            "rpm": 5107.9,
-            "vibration_g": 0.159
-          },
-          "parameters": [
-            {
-              "critical": false,
-              "critical_limit": 180,
-              "direction": "HIGH",
-              "margin": 58.764,
-              "parameter": "cht_c",
-              "unit": "\u00b0C",
-              "value": 121.236,
-              "warning": false,
-              "warning_limit": 165
-            },
-            {
-              "critical": false,
-              "critical_limit": 850,
-              "direction": "HIGH",
-              "margin": 153.465,
-              "parameter": "egt_c",
-              "unit": "\u00b0C",
-              "value": 696.535,
-              "warning": false,
-              "warning_limit": 780
-            },
-            {
-              "critical": false,
-              "critical_limit": 1.5,
-              "direction": "LOW",
-              "margin": 1.464,
-              "parameter": "oil_press_bar",
-              "unit": "bar",
-              "value": 2.964,
-              "warning": false,
-              "warning_limit": 2
-            },
-            {
-              "critical": false,
-              "critical_limit": 130,
-              "direction": "HIGH",
-              "margin": 29.676,
-              "parameter": "oil_temp_c",
-              "unit": "\u00b0C",
-              "value": 100.324,
-              "warning": false,
-              "warning_limit": 120
-            },
-            {
-              "critical": false,
-              "critical_limit": 0.5,
-              "direction": "HIGH",
-              "margin": 0.341,
-              "parameter": "vibration_g",
-              "unit": "g",
-              "value": 0.159,
-              "warning": false,
-              "warning_limit": 0.3
-            },
-            {
-              "critical": false,
-              "critical_limit": 10.5,
-              "direction": "LOW",
-              "margin": 3.384,
-              "parameter": "battery_v",
-              "unit": "V",
-              "value": 13.884,
-              "warning": false,
-              "warning_limit": 11.5
-            }
-          ],
-          "progress": 0.667,
-          "stress_score": 44.17
-        },
-        {
-          "checkpoint": 3,
-          "conditions": {
-            "altitude_ft": 5000,
-            "ambient_temp_c": 25,
-            "load_percent": 50,
-            "throttle_percent": 55
-          },
-          "engine_state": {
-            "battery_v": 13.884,
-            "cht_c": 121.236,
-            "egt_c": 696.535,
-            "fuel_flow": 1.047,
-            "oil_press_bar": 2.964,
-            "oil_temp_c": 100.324,
-            "rpm": 5107.9,
-            "vibration_g": 0.159
-          },
-          "parameters": [
-            {
-              "critical": false,
-              "critical_limit": 180,
-              "direction": "HIGH",
-              "margin": 58.764,
-              "parameter": "cht_c",
-              "unit": "\u00b0C",
-              "value": 121.236,
-              "warning": false,
-              "warning_limit": 165
-            },
-            {
-              "critical": false,
-              "critical_limit": 850,
-              "direction": "HIGH",
-              "margin": 153.465,
-              "parameter": "egt_c",
-              "unit": "\u00b0C",
-              "value": 696.535,
-              "warning": false,
-              "warning_limit": 780
-            },
-            {
-              "critical": false,
-              "critical_limit": 1.5,
-              "direction": "LOW",
-              "margin": 1.464,
-              "parameter": "oil_press_bar",
-              "unit": "bar",
-              "value": 2.964,
-              "warning": false,
-              "warning_limit": 2
-            },
-            {
-              "critical": false,
-              "critical_limit": 130,
-              "direction": "HIGH",
-              "margin": 29.676,
-              "parameter": "oil_temp_c",
-              "unit": "\u00b0C",
-              "value": 100.324,
-              "warning": false,
-              "warning_limit": 120
-            },
-            {
-              "critical": false,
-              "critical_limit": 0.5,
-              "direction": "HIGH",
-              "margin": 0.341,
-              "parameter": "vibration_g",
-              "unit": "g",
-              "value": 0.159,
-              "warning": false,
-              "warning_limit": 0.3
-            },
-            {
-              "critical": false,
-              "critical_limit": 10.5,
-              "direction": "LOW",
-              "margin": 3.384,
-              "parameter": "battery_v",
-              "unit": "V",
-              "value": 13.884,
-              "warning": false,
-              "warning_limit": 11.5
-            }
-          ],
-          "progress": 1,
-          "stress_score": 44.17
-        }
-      ],
-      "duration_min": 10,
-      "minimum_margin": 0.341,
-      "phase": "LOITER",
-      "stress_score": 44.17
-    },
-    {
-      "checkpoints": [
-        {
-          "checkpoint": 1,
-          "conditions": {
-            "altitude_ft": 3750,
-            "ambient_temp_c": 25,
-            "load_percent": 45,
-            "throttle_percent": 50
-          },
-          "engine_state": {
-            "battery_v": 13.898,
-            "cht_c": 120.669,
-            "egt_c": 694.41,
-            "fuel_flow": 1.044,
-            "oil_press_bar": 2.985,
-            "oil_temp_c": 99.758,
-            "rpm": 5107.9,
+            "oil_press_bar": 3.23,
+            "oil_temp_c": 99.697,
+            "rpm": 5057.7,
             "vibration_g": 0.152
           },
           "parameters": [
@@ -1264,10 +440,10 @@
               "critical": false,
               "critical_limit": 180,
               "direction": "HIGH",
-              "margin": 59.331,
+              "margin": 63.719,
               "parameter": "cht_c",
               "unit": "\u00b0C",
-              "value": 120.669,
+              "value": 116.281,
               "warning": false,
               "warning_limit": 165
             },
@@ -1275,10 +451,10 @@
               "critical": false,
               "critical_limit": 850,
               "direction": "HIGH",
-              "margin": 155.59,
+              "margin": 158.861,
               "parameter": "egt_c",
               "unit": "\u00b0C",
-              "value": 694.41,
+              "value": 691.139,
               "warning": false,
               "warning_limit": 780
             },
@@ -1286,10 +462,10 @@
               "critical": false,
               "critical_limit": 1.5,
               "direction": "LOW",
-              "margin": 1.485,
+              "margin": 1.73,
               "parameter": "oil_press_bar",
               "unit": "bar",
-              "value": 2.985,
+              "value": 3.23,
               "warning": false,
               "warning_limit": 2
             },
@@ -1297,10 +473,10 @@
               "critical": false,
               "critical_limit": 130,
               "direction": "HIGH",
-              "margin": 30.242,
+              "margin": 30.303,
               "parameter": "oil_temp_c",
               "unit": "\u00b0C",
-              "value": 99.758,
+              "value": 99.697,
               "warning": false,
               "warning_limit": 120
             },
@@ -1319,10 +495,560 @@
               "critical": false,
               "critical_limit": 10.5,
               "direction": "LOW",
-              "margin": 3.398,
+              "margin": 3.384,
               "parameter": "battery_v",
               "unit": "V",
-              "value": 13.898,
+              "value": 13.884,
+              "warning": false,
+              "warning_limit": 11.5
+            }
+          ],
+          "progress": 0.333,
+          "stress_score": 51.65
+        },
+        {
+          "checkpoint": 2,
+          "conditions": {
+            "altitude_ft": 3916.667,
+            "ambient_temp_c": 25,
+            "load_percent": 70,
+            "throttle_percent": 75
+          },
+          "engine_state": {
+            "battery_v": 13.881,
+            "cht_c": 116.425,
+            "egt_c": 691.68,
+            "fuel_flow": 1.047,
+            "oil_press_bar": 3.225,
+            "oil_temp_c": 99.841,
+            "rpm": 5057.7,
+            "vibration_g": 0.154
+          },
+          "parameters": [
+            {
+              "critical": false,
+              "critical_limit": 180,
+              "direction": "HIGH",
+              "margin": 63.575,
+              "parameter": "cht_c",
+              "unit": "\u00b0C",
+              "value": 116.425,
+              "warning": false,
+              "warning_limit": 165
+            },
+            {
+              "critical": false,
+              "critical_limit": 850,
+              "direction": "HIGH",
+              "margin": 158.32,
+              "parameter": "egt_c",
+              "unit": "\u00b0C",
+              "value": 691.68,
+              "warning": false,
+              "warning_limit": 780
+            },
+            {
+              "critical": false,
+              "critical_limit": 1.5,
+              "direction": "LOW",
+              "margin": 1.725,
+              "parameter": "oil_press_bar",
+              "unit": "bar",
+              "value": 3.225,
+              "warning": false,
+              "warning_limit": 2
+            },
+            {
+              "critical": false,
+              "critical_limit": 130,
+              "direction": "HIGH",
+              "margin": 30.159,
+              "parameter": "oil_temp_c",
+              "unit": "\u00b0C",
+              "value": 99.841,
+              "warning": false,
+              "warning_limit": 120
+            },
+            {
+              "critical": false,
+              "critical_limit": 0.5,
+              "direction": "HIGH",
+              "margin": 0.346,
+              "parameter": "vibration_g",
+              "unit": "g",
+              "value": 0.154,
+              "warning": false,
+              "warning_limit": 0.3
+            },
+            {
+              "critical": false,
+              "critical_limit": 10.5,
+              "direction": "LOW",
+              "margin": 3.381,
+              "parameter": "battery_v",
+              "unit": "V",
+              "value": 13.881,
+              "warning": false,
+              "warning_limit": 11.5
+            }
+          ],
+          "progress": 0.667,
+          "stress_score": 53.91
+        },
+        {
+          "checkpoint": 3,
+          "conditions": {
+            "altitude_ft": 5000,
+            "ambient_temp_c": 25,
+            "load_percent": 70,
+            "throttle_percent": 75
+          },
+          "engine_state": {
+            "battery_v": 13.877,
+            "cht_c": 116.569,
+            "egt_c": 692.222,
+            "fuel_flow": 1.048,
+            "oil_press_bar": 3.219,
+            "oil_temp_c": 99.986,
+            "rpm": 5057.7,
+            "vibration_g": 0.155
+          },
+          "parameters": [
+            {
+              "critical": false,
+              "critical_limit": 180,
+              "direction": "HIGH",
+              "margin": 63.431,
+              "parameter": "cht_c",
+              "unit": "\u00b0C",
+              "value": 116.569,
+              "warning": false,
+              "warning_limit": 165
+            },
+            {
+              "critical": false,
+              "critical_limit": 850,
+              "direction": "HIGH",
+              "margin": 157.778,
+              "parameter": "egt_c",
+              "unit": "\u00b0C",
+              "value": 692.222,
+              "warning": false,
+              "warning_limit": 780
+            },
+            {
+              "critical": false,
+              "critical_limit": 1.5,
+              "direction": "LOW",
+              "margin": 1.719,
+              "parameter": "oil_press_bar",
+              "unit": "bar",
+              "value": 3.219,
+              "warning": false,
+              "warning_limit": 2
+            },
+            {
+              "critical": false,
+              "critical_limit": 130,
+              "direction": "HIGH",
+              "margin": 30.014,
+              "parameter": "oil_temp_c",
+              "unit": "\u00b0C",
+              "value": 99.986,
+              "warning": false,
+              "warning_limit": 120
+            },
+            {
+              "critical": false,
+              "critical_limit": 0.5,
+              "direction": "HIGH",
+              "margin": 0.345,
+              "parameter": "vibration_g",
+              "unit": "g",
+              "value": 0.155,
+              "warning": false,
+              "warning_limit": 0.3
+            },
+            {
+              "critical": false,
+              "critical_limit": 10.5,
+              "direction": "LOW",
+              "margin": 3.377,
+              "parameter": "battery_v",
+              "unit": "V",
+              "value": 13.877,
+              "warning": false,
+              "warning_limit": 11.5
+            }
+          ],
+          "progress": 1,
+          "stress_score": 56.17
+        }
+      ],
+      "duration_min": 0.6,
+      "minimum_margin": 0.345,
+      "phase": "CLIMB",
+      "stress_score": 53.91
+    },
+    {
+      "checkpoints": [
+        {
+          "checkpoint": 1,
+          "conditions": {
+            "altitude_ft": 5000,
+            "ambient_temp_c": 25,
+            "load_percent": 50,
+            "throttle_percent": 55
+          },
+          "engine_state": {
+            "battery_v": 13.927,
+            "cht_c": 114.569,
+            "egt_c": 684.722,
+            "fuel_flow": 1.036,
+            "oil_press_bar": 3.294,
+            "oil_temp_c": 97.986,
+            "rpm": 5057.7,
+            "vibration_g": 0.13
+          },
+          "parameters": [
+            {
+              "critical": false,
+              "critical_limit": 180,
+              "direction": "HIGH",
+              "margin": 65.431,
+              "parameter": "cht_c",
+              "unit": "\u00b0C",
+              "value": 114.569,
+              "warning": false,
+              "warning_limit": 165
+            },
+            {
+              "critical": false,
+              "critical_limit": 850,
+              "direction": "HIGH",
+              "margin": 165.278,
+              "parameter": "egt_c",
+              "unit": "\u00b0C",
+              "value": 684.722,
+              "warning": false,
+              "warning_limit": 780
+            },
+            {
+              "critical": false,
+              "critical_limit": 1.5,
+              "direction": "LOW",
+              "margin": 1.794,
+              "parameter": "oil_press_bar",
+              "unit": "bar",
+              "value": 3.294,
+              "warning": false,
+              "warning_limit": 2
+            },
+            {
+              "critical": false,
+              "critical_limit": 130,
+              "direction": "HIGH",
+              "margin": 32.014,
+              "parameter": "oil_temp_c",
+              "unit": "\u00b0C",
+              "value": 97.986,
+              "warning": false,
+              "warning_limit": 120
+            },
+            {
+              "critical": false,
+              "critical_limit": 0.5,
+              "direction": "HIGH",
+              "margin": 0.37,
+              "parameter": "vibration_g",
+              "unit": "g",
+              "value": 0.13,
+              "warning": false,
+              "warning_limit": 0.3
+            },
+            {
+              "critical": false,
+              "critical_limit": 10.5,
+              "direction": "LOW",
+              "margin": 3.427,
+              "parameter": "battery_v",
+              "unit": "V",
+              "value": 13.927,
+              "warning": false,
+              "warning_limit": 11.5
+            }
+          ],
+          "progress": 0.333,
+          "stress_score": 44.17
+        },
+        {
+          "checkpoint": 2,
+          "conditions": {
+            "altitude_ft": 5000,
+            "ambient_temp_c": 25,
+            "load_percent": 50,
+            "throttle_percent": 55
+          },
+          "engine_state": {
+            "battery_v": 13.927,
+            "cht_c": 114.569,
+            "egt_c": 684.722,
+            "fuel_flow": 1.036,
+            "oil_press_bar": 3.294,
+            "oil_temp_c": 97.986,
+            "rpm": 5057.7,
+            "vibration_g": 0.13
+          },
+          "parameters": [
+            {
+              "critical": false,
+              "critical_limit": 180,
+              "direction": "HIGH",
+              "margin": 65.431,
+              "parameter": "cht_c",
+              "unit": "\u00b0C",
+              "value": 114.569,
+              "warning": false,
+              "warning_limit": 165
+            },
+            {
+              "critical": false,
+              "critical_limit": 850,
+              "direction": "HIGH",
+              "margin": 165.278,
+              "parameter": "egt_c",
+              "unit": "\u00b0C",
+              "value": 684.722,
+              "warning": false,
+              "warning_limit": 780
+            },
+            {
+              "critical": false,
+              "critical_limit": 1.5,
+              "direction": "LOW",
+              "margin": 1.794,
+              "parameter": "oil_press_bar",
+              "unit": "bar",
+              "value": 3.294,
+              "warning": false,
+              "warning_limit": 2
+            },
+            {
+              "critical": false,
+              "critical_limit": 130,
+              "direction": "HIGH",
+              "margin": 32.014,
+              "parameter": "oil_temp_c",
+              "unit": "\u00b0C",
+              "value": 97.986,
+              "warning": false,
+              "warning_limit": 120
+            },
+            {
+              "critical": false,
+              "critical_limit": 0.5,
+              "direction": "HIGH",
+              "margin": 0.37,
+              "parameter": "vibration_g",
+              "unit": "g",
+              "value": 0.13,
+              "warning": false,
+              "warning_limit": 0.3
+            },
+            {
+              "critical": false,
+              "critical_limit": 10.5,
+              "direction": "LOW",
+              "margin": 3.427,
+              "parameter": "battery_v",
+              "unit": "V",
+              "value": 13.927,
+              "warning": false,
+              "warning_limit": 11.5
+            }
+          ],
+          "progress": 0.667,
+          "stress_score": 44.17
+        },
+        {
+          "checkpoint": 3,
+          "conditions": {
+            "altitude_ft": 5000,
+            "ambient_temp_c": 25,
+            "load_percent": 50,
+            "throttle_percent": 55
+          },
+          "engine_state": {
+            "battery_v": 13.927,
+            "cht_c": 114.569,
+            "egt_c": 684.722,
+            "fuel_flow": 1.036,
+            "oil_press_bar": 3.294,
+            "oil_temp_c": 97.986,
+            "rpm": 5057.7,
+            "vibration_g": 0.13
+          },
+          "parameters": [
+            {
+              "critical": false,
+              "critical_limit": 180,
+              "direction": "HIGH",
+              "margin": 65.431,
+              "parameter": "cht_c",
+              "unit": "\u00b0C",
+              "value": 114.569,
+              "warning": false,
+              "warning_limit": 165
+            },
+            {
+              "critical": false,
+              "critical_limit": 850,
+              "direction": "HIGH",
+              "margin": 165.278,
+              "parameter": "egt_c",
+              "unit": "\u00b0C",
+              "value": 684.722,
+              "warning": false,
+              "warning_limit": 780
+            },
+            {
+              "critical": false,
+              "critical_limit": 1.5,
+              "direction": "LOW",
+              "margin": 1.794,
+              "parameter": "oil_press_bar",
+              "unit": "bar",
+              "value": 3.294,
+              "warning": false,
+              "warning_limit": 2
+            },
+            {
+              "critical": false,
+              "critical_limit": 130,
+              "direction": "HIGH",
+              "margin": 32.014,
+              "parameter": "oil_temp_c",
+              "unit": "\u00b0C",
+              "value": 97.986,
+              "warning": false,
+              "warning_limit": 120
+            },
+            {
+              "critical": false,
+              "critical_limit": 0.5,
+              "direction": "HIGH",
+              "margin": 0.37,
+              "parameter": "vibration_g",
+              "unit": "g",
+              "value": 0.13,
+              "warning": false,
+              "warning_limit": 0.3
+            },
+            {
+              "critical": false,
+              "critical_limit": 10.5,
+              "direction": "LOW",
+              "margin": 3.427,
+              "parameter": "battery_v",
+              "unit": "V",
+              "value": 13.927,
+              "warning": false,
+              "warning_limit": 11.5
+            }
+          ],
+          "progress": 1,
+          "stress_score": 44.17
+        }
+      ],
+      "duration_min": 2.4,
+      "minimum_margin": 0.37,
+      "phase": "LOITER",
+      "stress_score": 44.17
+    },
+    {
+      "checkpoints": [
+        {
+          "checkpoint": 1,
+          "conditions": {
+            "altitude_ft": 3750,
+            "ambient_temp_c": 25,
+            "load_percent": 45,
+            "throttle_percent": 50
+          },
+          "engine_state": {
+            "battery_v": 13.941,
+            "cht_c": 114.003,
+            "egt_c": 682.597,
+            "fuel_flow": 1.032,
+            "oil_press_bar": 3.316,
+            "oil_temp_c": 97.419,
+            "rpm": 5057.7,
+            "vibration_g": 0.123
+          },
+          "parameters": [
+            {
+              "critical": false,
+              "critical_limit": 180,
+              "direction": "HIGH",
+              "margin": 65.997,
+              "parameter": "cht_c",
+              "unit": "\u00b0C",
+              "value": 114.003,
+              "warning": false,
+              "warning_limit": 165
+            },
+            {
+              "critical": false,
+              "critical_limit": 850,
+              "direction": "HIGH",
+              "margin": 167.403,
+              "parameter": "egt_c",
+              "unit": "\u00b0C",
+              "value": 682.597,
+              "warning": false,
+              "warning_limit": 780
+            },
+            {
+              "critical": false,
+              "critical_limit": 1.5,
+              "direction": "LOW",
+              "margin": 1.816,
+              "parameter": "oil_press_bar",
+              "unit": "bar",
+              "value": 3.316,
+              "warning": false,
+              "warning_limit": 2
+            },
+            {
+              "critical": false,
+              "critical_limit": 130,
+              "direction": "HIGH",
+              "margin": 32.581,
+              "parameter": "oil_temp_c",
+              "unit": "\u00b0C",
+              "value": 97.419,
+              "warning": false,
+              "warning_limit": 120
+            },
+            {
+              "critical": false,
+              "critical_limit": 0.5,
+              "direction": "HIGH",
+              "margin": 0.377,
+              "parameter": "vibration_g",
+              "unit": "g",
+              "value": 0.123,
+              "warning": false,
+              "warning_limit": 0.3
+            },
+            {
+              "critical": false,
+              "critical_limit": 10.5,
+              "direction": "LOW",
+              "margin": 3.441,
+              "parameter": "battery_v",
+              "unit": "V",
+              "value": 13.941,
               "warning": false,
               "warning_limit": 11.5
             }
@@ -1339,24 +1065,24 @@
             "throttle_percent": 50
           },
           "engine_state": {
-            "battery_v": 13.902,
-            "cht_c": 120.502,
-            "egt_c": 693.785,
-            "fuel_flow": 1.043,
-            "oil_press_bar": 2.991,
-            "oil_temp_c": 99.591,
-            "rpm": 5107.9,
-            "vibration_g": 0.15
+            "battery_v": 13.945,
+            "cht_c": 113.836,
+            "egt_c": 681.972,
+            "fuel_flow": 1.031,
+            "oil_press_bar": 3.322,
+            "oil_temp_c": 97.252,
+            "rpm": 5057.7,
+            "vibration_g": 0.121
           },
           "parameters": [
             {
               "critical": false,
               "critical_limit": 180,
               "direction": "HIGH",
-              "margin": 59.498,
+              "margin": 66.164,
               "parameter": "cht_c",
               "unit": "\u00b0C",
-              "value": 120.502,
+              "value": 113.836,
               "warning": false,
               "warning_limit": 165
             },
@@ -1364,10 +1090,10 @@
               "critical": false,
               "critical_limit": 850,
               "direction": "HIGH",
-              "margin": 156.215,
+              "margin": 168.028,
               "parameter": "egt_c",
               "unit": "\u00b0C",
-              "value": 693.785,
+              "value": 681.972,
               "warning": false,
               "warning_limit": 780
             },
@@ -1375,10 +1101,10 @@
               "critical": false,
               "critical_limit": 1.5,
               "direction": "LOW",
-              "margin": 1.491,
+              "margin": 1.822,
               "parameter": "oil_press_bar",
               "unit": "bar",
-              "value": 2.991,
+              "value": 3.322,
               "warning": false,
               "warning_limit": 2
             },
@@ -1386,10 +1112,10 @@
               "critical": false,
               "critical_limit": 130,
               "direction": "HIGH",
-              "margin": 30.409,
+              "margin": 32.748,
               "parameter": "oil_temp_c",
               "unit": "\u00b0C",
-              "value": 99.591,
+              "value": 97.252,
               "warning": false,
               "warning_limit": 120
             },
@@ -1397,10 +1123,10 @@
               "critical": false,
               "critical_limit": 0.5,
               "direction": "HIGH",
-              "margin": 0.35,
+              "margin": 0.379,
               "parameter": "vibration_g",
               "unit": "g",
-              "value": 0.15,
+              "value": 0.121,
               "warning": false,
               "warning_limit": 0.3
             },
@@ -1408,10 +1134,10 @@
               "critical": false,
               "critical_limit": 10.5,
               "direction": "LOW",
-              "margin": 3.402,
+              "margin": 3.445,
               "parameter": "battery_v",
               "unit": "V",
-              "value": 13.902,
+              "value": 13.945,
               "warning": false,
               "warning_limit": 11.5
             }
@@ -1428,24 +1154,24 @@
             "throttle_percent": 50
           },
           "engine_state": {
-            "battery_v": 13.906,
-            "cht_c": 120.336,
-            "egt_c": 693.16,
-            "fuel_flow": 1.042,
-            "oil_press_bar": 2.997,
-            "oil_temp_c": 99.424,
-            "rpm": 5107.9,
-            "vibration_g": 0.148
+            "battery_v": 13.95,
+            "cht_c": 113.669,
+            "egt_c": 681.347,
+            "fuel_flow": 1.03,
+            "oil_press_bar": 3.328,
+            "oil_temp_c": 97.086,
+            "rpm": 5057.7,
+            "vibration_g": 0.119
           },
           "parameters": [
             {
               "critical": false,
               "critical_limit": 180,
               "direction": "HIGH",
-              "margin": 59.664,
+              "margin": 66.331,
               "parameter": "cht_c",
               "unit": "\u00b0C",
-              "value": 120.336,
+              "value": 113.669,
               "warning": false,
               "warning_limit": 165
             },
@@ -1453,10 +1179,10 @@
               "critical": false,
               "critical_limit": 850,
               "direction": "HIGH",
-              "margin": 156.84,
+              "margin": 168.653,
               "parameter": "egt_c",
               "unit": "\u00b0C",
-              "value": 693.16,
+              "value": 681.347,
               "warning": false,
               "warning_limit": 780
             },
@@ -1464,10 +1190,10 @@
               "critical": false,
               "critical_limit": 1.5,
               "direction": "LOW",
-              "margin": 1.497,
+              "margin": 1.828,
               "parameter": "oil_press_bar",
               "unit": "bar",
-              "value": 2.997,
+              "value": 3.328,
               "warning": false,
               "warning_limit": 2
             },
@@ -1475,10 +1201,10 @@
               "critical": false,
               "critical_limit": 130,
               "direction": "HIGH",
-              "margin": 30.576,
+              "margin": 32.914,
               "parameter": "oil_temp_c",
               "unit": "\u00b0C",
-              "value": 99.424,
+              "value": 97.086,
               "warning": false,
               "warning_limit": 120
             },
@@ -1486,10 +1212,10 @@
               "critical": false,
               "critical_limit": 0.5,
               "direction": "HIGH",
-              "margin": 0.352,
+              "margin": 0.381,
               "parameter": "vibration_g",
               "unit": "g",
-              "value": 0.148,
+              "value": 0.119,
               "warning": false,
               "warning_limit": 0.3
             },
@@ -1497,10 +1223,10 @@
               "critical": false,
               "critical_limit": 10.5,
               "direction": "LOW",
-              "margin": 3.406,
+              "margin": 3.45,
               "parameter": "battery_v",
               "unit": "V",
-              "value": 13.906,
+              "value": 13.95,
               "warning": false,
               "warning_limit": 11.5
             }
@@ -1509,8 +1235,8 @@
           "stress_score": 33.35
         }
       ],
-      "duration_min": 6,
-      "minimum_margin": 0.348,
+      "duration_min": 0.5,
+      "minimum_margin": 0.377,
       "phase": "DESCENT",
       "stress_score": 35.96
     },
@@ -1525,24 +1251,24 @@
             "throttle_percent": 60
           },
           "engine_state": {
-            "battery_v": 13.881,
-            "cht_c": 121.369,
-            "egt_c": 697.035,
-            "fuel_flow": 1.048,
-            "oil_press_bar": 2.959,
-            "oil_temp_c": 100.458,
-            "rpm": 5107.9,
-            "vibration_g": 0.161
+            "battery_v": 13.924,
+            "cht_c": 114.703,
+            "egt_c": 685.222,
+            "fuel_flow": 1.037,
+            "oil_press_bar": 3.289,
+            "oil_temp_c": 98.119,
+            "rpm": 5057.7,
+            "vibration_g": 0.132
           },
           "parameters": [
             {
               "critical": false,
               "critical_limit": 180,
               "direction": "HIGH",
-              "margin": 58.631,
+              "margin": 65.297,
               "parameter": "cht_c",
               "unit": "\u00b0C",
-              "value": 121.369,
+              "value": 114.703,
               "warning": false,
               "warning_limit": 165
             },
@@ -1550,10 +1276,10 @@
               "critical": false,
               "critical_limit": 850,
               "direction": "HIGH",
-              "margin": 152.965,
+              "margin": 164.778,
               "parameter": "egt_c",
               "unit": "\u00b0C",
-              "value": 697.035,
+              "value": 685.222,
               "warning": false,
               "warning_limit": 780
             },
@@ -1561,10 +1287,10 @@
               "critical": false,
               "critical_limit": 1.5,
               "direction": "LOW",
-              "margin": 1.459,
+              "margin": 1.789,
               "parameter": "oil_press_bar",
               "unit": "bar",
-              "value": 2.959,
+              "value": 3.289,
               "warning": false,
               "warning_limit": 2
             },
@@ -1572,10 +1298,10 @@
               "critical": false,
               "critical_limit": 130,
               "direction": "HIGH",
-              "margin": 29.542,
+              "margin": 31.881,
               "parameter": "oil_temp_c",
               "unit": "\u00b0C",
-              "value": 100.458,
+              "value": 98.119,
               "warning": false,
               "warning_limit": 120
             },
@@ -1583,10 +1309,10 @@
               "critical": false,
               "critical_limit": 0.5,
               "direction": "HIGH",
-              "margin": 0.339,
+              "margin": 0.368,
               "parameter": "vibration_g",
               "unit": "g",
-              "value": 0.161,
+              "value": 0.132,
               "warning": false,
               "warning_limit": 0.3
             },
@@ -1594,10 +1320,10 @@
               "critical": false,
               "critical_limit": 10.5,
               "direction": "LOW",
-              "margin": 3.381,
+              "margin": 3.424,
               "parameter": "battery_v",
               "unit": "V",
-              "value": 13.881,
+              "value": 13.924,
               "warning": false,
               "warning_limit": 11.5
             }
@@ -1614,24 +1340,24 @@
             "throttle_percent": 60
           },
           "engine_state": {
-            "battery_v": 13.881,
-            "cht_c": 121.369,
-            "egt_c": 697.035,
-            "fuel_flow": 1.048,
-            "oil_press_bar": 2.959,
-            "oil_temp_c": 100.458,
-            "rpm": 5107.9,
-            "vibration_g": 0.161
+            "battery_v": 13.924,
+            "cht_c": 114.703,
+            "egt_c": 685.222,
+            "fuel_flow": 1.037,
+            "oil_press_bar": 3.289,
+            "oil_temp_c": 98.119,
+            "rpm": 5057.7,
+            "vibration_g": 0.132
           },
           "parameters": [
             {
               "critical": false,
               "critical_limit": 180,
               "direction": "HIGH",
-              "margin": 58.631,
+              "margin": 65.297,
               "parameter": "cht_c",
               "unit": "\u00b0C",
-              "value": 121.369,
+              "value": 114.703,
               "warning": false,
               "warning_limit": 165
             },
@@ -1639,10 +1365,10 @@
               "critical": false,
               "critical_limit": 850,
               "direction": "HIGH",
-              "margin": 152.965,
+              "margin": 164.778,
               "parameter": "egt_c",
               "unit": "\u00b0C",
-              "value": 697.035,
+              "value": 685.222,
               "warning": false,
               "warning_limit": 780
             },
@@ -1650,10 +1376,10 @@
               "critical": false,
               "critical_limit": 1.5,
               "direction": "LOW",
-              "margin": 1.459,
+              "margin": 1.789,
               "parameter": "oil_press_bar",
               "unit": "bar",
-              "value": 2.959,
+              "value": 3.289,
               "warning": false,
               "warning_limit": 2
             },
@@ -1661,10 +1387,10 @@
               "critical": false,
               "critical_limit": 130,
               "direction": "HIGH",
-              "margin": 29.542,
+              "margin": 31.881,
               "parameter": "oil_temp_c",
               "unit": "\u00b0C",
-              "value": 100.458,
+              "value": 98.119,
               "warning": false,
               "warning_limit": 120
             },
@@ -1672,10 +1398,10 @@
               "critical": false,
               "critical_limit": 0.5,
               "direction": "HIGH",
-              "margin": 0.339,
+              "margin": 0.368,
               "parameter": "vibration_g",
               "unit": "g",
-              "value": 0.161,
+              "value": 0.132,
               "warning": false,
               "warning_limit": 0.3
             },
@@ -1683,10 +1409,10 @@
               "critical": false,
               "critical_limit": 10.5,
               "direction": "LOW",
-              "margin": 3.381,
+              "margin": 3.424,
               "parameter": "battery_v",
               "unit": "V",
-              "value": 13.881,
+              "value": 13.924,
               "warning": false,
               "warning_limit": 11.5
             }
@@ -1703,24 +1429,24 @@
             "throttle_percent": 60
           },
           "engine_state": {
-            "battery_v": 13.881,
-            "cht_c": 121.369,
-            "egt_c": 697.035,
-            "fuel_flow": 1.048,
-            "oil_press_bar": 2.959,
-            "oil_temp_c": 100.458,
-            "rpm": 5107.9,
-            "vibration_g": 0.161
+            "battery_v": 13.924,
+            "cht_c": 114.703,
+            "egt_c": 685.222,
+            "fuel_flow": 1.037,
+            "oil_press_bar": 3.289,
+            "oil_temp_c": 98.119,
+            "rpm": 5057.7,
+            "vibration_g": 0.132
           },
           "parameters": [
             {
               "critical": false,
               "critical_limit": 180,
               "direction": "HIGH",
-              "margin": 58.631,
+              "margin": 65.297,
               "parameter": "cht_c",
               "unit": "\u00b0C",
-              "value": 121.369,
+              "value": 114.703,
               "warning": false,
               "warning_limit": 165
             },
@@ -1728,10 +1454,10 @@
               "critical": false,
               "critical_limit": 850,
               "direction": "HIGH",
-              "margin": 152.965,
+              "margin": 164.778,
               "parameter": "egt_c",
               "unit": "\u00b0C",
-              "value": 697.035,
+              "value": 685.222,
               "warning": false,
               "warning_limit": 780
             },
@@ -1739,10 +1465,10 @@
               "critical": false,
               "critical_limit": 1.5,
               "direction": "LOW",
-              "margin": 1.459,
+              "margin": 1.789,
               "parameter": "oil_press_bar",
               "unit": "bar",
-              "value": 2.959,
+              "value": 3.289,
               "warning": false,
               "warning_limit": 2
             },
@@ -1750,10 +1476,10 @@
               "critical": false,
               "critical_limit": 130,
               "direction": "HIGH",
-              "margin": 29.542,
+              "margin": 31.881,
               "parameter": "oil_temp_c",
               "unit": "\u00b0C",
-              "value": 100.458,
+              "value": 98.119,
               "warning": false,
               "warning_limit": 120
             },
@@ -1761,10 +1487,10 @@
               "critical": false,
               "critical_limit": 0.5,
               "direction": "HIGH",
-              "margin": 0.339,
+              "margin": 0.368,
               "parameter": "vibration_g",
               "unit": "g",
-              "value": 0.161,
+              "value": 0.132,
               "warning": false,
               "warning_limit": 0.3
             },
@@ -1772,10 +1498,10 @@
               "critical": false,
               "critical_limit": 10.5,
               "direction": "LOW",
-              "margin": 3.381,
+              "margin": 3.424,
               "parameter": "battery_v",
               "unit": "V",
-              "value": 13.881,
+              "value": 13.924,
               "warning": false,
               "warning_limit": 11.5
             }
@@ -1784,8 +1510,8 @@
           "stress_score": 43
         }
       ],
-      "duration_min": 3.26,
-      "minimum_margin": 0.339,
+      "duration_min": 1,
+      "minimum_margin": 0.368,
       "phase": "RETURN",
       "stress_score": 43
     },
@@ -1800,24 +1526,24 @@
             "throttle_percent": 35
           },
           "engine_state": {
-            "battery_v": 13.909,
-            "cht_c": 120.236,
-            "egt_c": 692.785,
-            "fuel_flow": 1.041,
-            "oil_press_bar": 3.001,
-            "oil_temp_c": 99.324,
-            "rpm": 5107.9,
-            "vibration_g": 0.147
+            "battery_v": 13.952,
+            "cht_c": 113.569,
+            "egt_c": 680.972,
+            "fuel_flow": 1.03,
+            "oil_press_bar": 3.332,
+            "oil_temp_c": 96.986,
+            "rpm": 5057.7,
+            "vibration_g": 0.118
           },
           "parameters": [
             {
               "critical": false,
               "critical_limit": 180,
               "direction": "HIGH",
-              "margin": 59.764,
+              "margin": 66.431,
               "parameter": "cht_c",
               "unit": "\u00b0C",
-              "value": 120.236,
+              "value": 113.569,
               "warning": false,
               "warning_limit": 165
             },
@@ -1825,10 +1551,10 @@
               "critical": false,
               "critical_limit": 850,
               "direction": "HIGH",
-              "margin": 157.215,
+              "margin": 169.028,
               "parameter": "egt_c",
               "unit": "\u00b0C",
-              "value": 692.785,
+              "value": 680.972,
               "warning": false,
               "warning_limit": 780
             },
@@ -1836,10 +1562,10 @@
               "critical": false,
               "critical_limit": 1.5,
               "direction": "LOW",
-              "margin": 1.501,
+              "margin": 1.832,
               "parameter": "oil_press_bar",
               "unit": "bar",
-              "value": 3.001,
+              "value": 3.332,
               "warning": false,
               "warning_limit": 2
             },
@@ -1847,10 +1573,10 @@
               "critical": false,
               "critical_limit": 130,
               "direction": "HIGH",
-              "margin": 30.676,
+              "margin": 33.014,
               "parameter": "oil_temp_c",
               "unit": "\u00b0C",
-              "value": 99.324,
+              "value": 96.986,
               "warning": false,
               "warning_limit": 120
             },
@@ -1858,10 +1584,10 @@
               "critical": false,
               "critical_limit": 0.5,
               "direction": "HIGH",
-              "margin": 0.353,
+              "margin": 0.382,
               "parameter": "vibration_g",
               "unit": "g",
-              "value": 0.147,
+              "value": 0.118,
               "warning": false,
               "warning_limit": 0.3
             },
@@ -1869,10 +1595,10 @@
               "critical": false,
               "critical_limit": 10.5,
               "direction": "LOW",
-              "margin": 3.409,
+              "margin": 3.452,
               "parameter": "battery_v",
               "unit": "V",
-              "value": 13.909,
+              "value": 13.952,
               "warning": false,
               "warning_limit": 11.5
             }
@@ -1889,24 +1615,24 @@
             "throttle_percent": 35
           },
           "engine_state": {
-            "battery_v": 13.909,
-            "cht_c": 120.236,
-            "egt_c": 692.785,
-            "fuel_flow": 1.041,
-            "oil_press_bar": 3.001,
-            "oil_temp_c": 99.324,
-            "rpm": 5107.9,
-            "vibration_g": 0.147
+            "battery_v": 13.952,
+            "cht_c": 113.569,
+            "egt_c": 680.972,
+            "fuel_flow": 1.03,
+            "oil_press_bar": 3.332,
+            "oil_temp_c": 96.986,
+            "rpm": 5057.7,
+            "vibration_g": 0.118
           },
           "parameters": [
             {
               "critical": false,
               "critical_limit": 180,
               "direction": "HIGH",
-              "margin": 59.764,
+              "margin": 66.431,
               "parameter": "cht_c",
               "unit": "\u00b0C",
-              "value": 120.236,
+              "value": 113.569,
               "warning": false,
               "warning_limit": 165
             },
@@ -1914,10 +1640,10 @@
               "critical": false,
               "critical_limit": 850,
               "direction": "HIGH",
-              "margin": 157.215,
+              "margin": 169.028,
               "parameter": "egt_c",
               "unit": "\u00b0C",
-              "value": 692.785,
+              "value": 680.972,
               "warning": false,
               "warning_limit": 780
             },
@@ -1925,10 +1651,10 @@
               "critical": false,
               "critical_limit": 1.5,
               "direction": "LOW",
-              "margin": 1.501,
+              "margin": 1.832,
               "parameter": "oil_press_bar",
               "unit": "bar",
-              "value": 3.001,
+              "value": 3.332,
               "warning": false,
               "warning_limit": 2
             },
@@ -1936,10 +1662,10 @@
               "critical": false,
               "critical_limit": 130,
               "direction": "HIGH",
-              "margin": 30.676,
+              "margin": 33.014,
               "parameter": "oil_temp_c",
               "unit": "\u00b0C",
-              "value": 99.324,
+              "value": 96.986,
               "warning": false,
               "warning_limit": 120
             },
@@ -1947,10 +1673,10 @@
               "critical": false,
               "critical_limit": 0.5,
               "direction": "HIGH",
-              "margin": 0.353,
+              "margin": 0.382,
               "parameter": "vibration_g",
               "unit": "g",
-              "value": 0.147,
+              "value": 0.118,
               "warning": false,
               "warning_limit": 0.3
             },
@@ -1958,10 +1684,10 @@
               "critical": false,
               "critical_limit": 10.5,
               "direction": "LOW",
-              "margin": 3.409,
+              "margin": 3.452,
               "parameter": "battery_v",
               "unit": "V",
-              "value": 13.909,
+              "value": 13.952,
               "warning": false,
               "warning_limit": 11.5
             }
@@ -1978,24 +1704,24 @@
             "throttle_percent": 35
           },
           "engine_state": {
-            "battery_v": 13.909,
-            "cht_c": 120.236,
-            "egt_c": 692.785,
-            "fuel_flow": 1.041,
-            "oil_press_bar": 3.001,
-            "oil_temp_c": 99.324,
-            "rpm": 5107.9,
-            "vibration_g": 0.147
+            "battery_v": 13.952,
+            "cht_c": 113.569,
+            "egt_c": 680.972,
+            "fuel_flow": 1.03,
+            "oil_press_bar": 3.332,
+            "oil_temp_c": 96.986,
+            "rpm": 5057.7,
+            "vibration_g": 0.118
           },
           "parameters": [
             {
               "critical": false,
               "critical_limit": 180,
               "direction": "HIGH",
-              "margin": 59.764,
+              "margin": 66.431,
               "parameter": "cht_c",
               "unit": "\u00b0C",
-              "value": 120.236,
+              "value": 113.569,
               "warning": false,
               "warning_limit": 165
             },
@@ -2003,10 +1729,10 @@
               "critical": false,
               "critical_limit": 850,
               "direction": "HIGH",
-              "margin": 157.215,
+              "margin": 169.028,
               "parameter": "egt_c",
               "unit": "\u00b0C",
-              "value": 692.785,
+              "value": 680.972,
               "warning": false,
               "warning_limit": 780
             },
@@ -2014,10 +1740,10 @@
               "critical": false,
               "critical_limit": 1.5,
               "direction": "LOW",
-              "margin": 1.501,
+              "margin": 1.832,
               "parameter": "oil_press_bar",
               "unit": "bar",
-              "value": 3.001,
+              "value": 3.332,
               "warning": false,
               "warning_limit": 2
             },
@@ -2025,10 +1751,10 @@
               "critical": false,
               "critical_limit": 130,
               "direction": "HIGH",
-              "margin": 30.676,
+              "margin": 33.014,
               "parameter": "oil_temp_c",
               "unit": "\u00b0C",
-              "value": 99.324,
+              "value": 96.986,
               "warning": false,
               "warning_limit": 120
             },
@@ -2036,10 +1762,10 @@
               "critical": false,
               "critical_limit": 0.5,
               "direction": "HIGH",
-              "margin": 0.353,
+              "margin": 0.382,
               "parameter": "vibration_g",
               "unit": "g",
-              "value": 0.147,
+              "value": 0.118,
               "warning": false,
               "warning_limit": 0.3
             },
@@ -2047,10 +1773,10 @@
               "critical": false,
               "critical_limit": 10.5,
               "direction": "LOW",
-              "margin": 3.409,
+              "margin": 3.452,
               "parameter": "battery_v",
               "unit": "V",
-              "value": 13.909,
+              "value": 13.952,
               "warning": false,
               "warning_limit": 11.5
             }
@@ -2059,8 +1785,8 @@
           "stress_score": 24.54
         }
       ],
-      "duration_min": 3,
-      "minimum_margin": 0.353,
+      "duration_min": 0.25,
+      "minimum_margin": 0.382,
       "phase": "LANDING",
       "stress_score": 24.54
     }

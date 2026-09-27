@@ -164,6 +164,46 @@ function mapRawToRealistic(value, rawRange, targetRange) {
   return targetLo + t * (targetHi - targetLo);
 }
 
+function toFiniteNumber(value) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim() !== "") {
+    const n = Number(value);
+    if (Number.isFinite(n)) {
+      return n;
+    }
+  }
+
+  return null;
+}
+
+function pickNumberFromPacket(msg, keys) {
+  if (!msg || typeof msg !== "object") {
+    return null;
+  }
+
+  const layers = [
+    msg,
+    msg.reading,
+    msg.data,
+    msg.telemetry,
+    msg.sensors,
+  ].filter((layer) => layer && typeof layer === "object");
+
+  for (const layer of layers) {
+    for (const key of keys) {
+      const n = toFiniteNumber(layer[key]);
+      if (n !== null) {
+        return n;
+      }
+    }
+  }
+
+  return null;
+}
+
 // ==========================================================
 // DESIGN COLORS
 // ==========================================================
@@ -568,6 +608,12 @@ export default function VirtualEngine({ externalFault, onTelemetryUpdate, onFaul
       DEFAULT_HARDWARE_MODE
     );
 
+  const hardwareModeRef = useRef(hardwareMode);
+
+  useEffect(() => {
+    hardwareModeRef.current = hardwareMode;
+  }, [hardwareMode]);
+
   const [
     dataSourceStatus,
     setDataSourceStatus,
@@ -925,14 +971,22 @@ export default function VirtualEngine({ externalFault, onTelemetryUpdate, onFaul
                 evt.data
               );
 
+            const parsedRpm = pickNumberFromPacket(
+              msg,
+              ["rpm", "RPM", "engine_rpm", "engineRpm"]
+            );
+            if (parsedRpm !== null) {
+              hardwareRef.current.rpm = parsedRpm;
+            }
+
             for (const field of HARDWARE_FIELDS) {
-              if (
-                typeof msg[field] ===
-                "number"
-              ) {
-                hardwareRef.current[
-                  field
-                ] = msg[field];
+              if (field === "rpm") {
+                continue;
+              }
+
+              const parsed = pickNumberFromPacket(msg, [field]);
+              if (parsed !== null) {
+                hardwareRef.current[field] = parsed;
               }
             }
 
@@ -2741,9 +2795,13 @@ export default function VirtualEngine({ externalFault, onTelemetryUpdate, onFaul
       const ft =
         t.flightT;
 
-      // Lerp runFactor (1 = running, 0 = killed)
-      const isEngineOn = engineRunningRef.current !== false && latestData.engineRunning !== false;
-      t.runFactor = THREE.MathUtils.lerp(t.runFactor ?? 1, isEngineOn ? 1 : 0, dt * 5.0);
+      // Kill switch wins immediately. Do not treat RPM 0 as "missing".
+      const isEngineOn = engineRunningRef.current !== false;
+      if (!isEngineOn) {
+        t.runFactor = 0;
+      } else {
+        t.runFactor = THREE.MathUtils.lerp(t.runFactor ?? 1, 1, dt * 5.0);
+      }
       const rf = t.runFactor;
 
       let bobAmp = 0.05;
@@ -2797,9 +2855,9 @@ export default function VirtualEngine({ externalFault, onTelemetryUpdate, onFaul
         ) * pitchAmp;
 
       if (t.engine) {
-        t.engine.rotation.z = flyBank;
-        t.engine.rotation.x = flyPitch;
-        t.engine.position.y = 0.3 + flyY;
+        t.engine.rotation.z = flyBank * rf;
+        t.engine.rotation.x = flyPitch * rf;
+        t.engine.position.y = 0.3 + flyY * rf;
       }
 
       // ====================================================
@@ -2906,31 +2964,48 @@ export default function VirtualEngine({ externalFault, onTelemetryUpdate, onFaul
       }
 
       // ====================================================
-      // RPM VISUAL — scaled by Engine Kill Switch runFactor (rf)
+      // RPM VISUAL — live shaft speed tracks sensor RPM;
+      // kill switch forces 0 so the model actually stops.
       // ====================================================
 
-      const effectiveRpm = (reading.rpm || 2500) * rf;
+      let gaugeRpm = 0;
+      if (isEngineOn) {
+        if (hardwareModeRef.current === "live") {
+          const liveRpm = toFiniteNumber(hardwareRef.current.rpm);
+          gaugeRpm =
+            liveRpm === null
+              ? 0
+              : mapRawToRealistic(
+                  liveRpm,
+                  RAW_HARDWARE_RANGE.rpm,
+                  MAPPED_TARGET_RANGE.rpm
+                );
+        } else {
+          const simRpm = toFiniteNumber(reading.rpm);
+          gaugeRpm = simRpm === null ? 0 : Math.max(0, simRpm);
+        }
+      }
+
+      const effectiveRpm = Math.max(0, gaugeRpm) * rf;
       const rpmFrac = effectiveRpm / 5500;
+      // Shaft speed is proportional to the RPM gauge (0 RPM = stopped).
+      const shaftRadPerSec = rpmFrac * 30;
+      const flywheelRadPerSec = rpmFrac * 14;
+      const crankRadPerSec = rpmFrac * 20;
 
       if (t.flywheel) {
-        t.flywheel.rotation.x +=
-          dt *
-          rpmFrac *
-          14;
+        t.flywheel.rotation.x += flywheelRadPerSec * dt;
       }
 
       if (t.propGroup) {
-        t.propGroup.rotation.x +=
-          dt *
-          rpmFrac *
-          30;
+        t.propGroup.rotation.x += shaftRadPerSec * dt;
       }
 
       // ====================================================
       // PISTONS ANIMATION — 6 side rods reciprocating with crank angle
       // ====================================================
       if (t.pistons) {
-        const crankAngle = (t.crankAngle || 0) + dt * rpmFrac * 20;
+        const crankAngle = (t.crankAngle || 0) + crankRadPerSec * dt;
         t.crankAngle = crankAngle;
 
         const STROKE_AMP = 0.45 * rf;
@@ -2985,7 +3060,7 @@ export default function VirtualEngine({ externalFault, onTelemetryUpdate, onFaul
           1.2;
 
         t.engine.position.y =
-          flyY +
+          flyY * rf +
           0.2 +
           (Math.random() -
             0.5) *

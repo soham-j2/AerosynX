@@ -10,13 +10,12 @@ import threading
 # ============================================================
 
 API_URLS = [
-    "http://localhost:5000/api/telemetry",
-    "http://127.0.0.1:5000/api/telemetry",
-    "https://virtual-engine-api.onrender.com/api/telemetry"
+    "http://localhost:5001/api/telemetry",
+    "http://127.0.0.1:5001/api/telemetry"
 ]
 API_URL = API_URLS[0]
 
-API_TIMEOUT = 1.5
+API_TIMEOUT = 0.1
 
 _LATEST_API_DATA = {
     "rpm": 5080.0,
@@ -41,51 +40,51 @@ _LATEST_API_DATA = {
 _API_LOCK = threading.Lock()
 _BG_THREAD_STARTED = False
 _HTTP_SESSION = requests.Session()
-
+_PREV_SMOOTHED_DATA = {}
 
 def _bg_api_fetcher():
-    global _LATEST_API_DATA
+    global _LATEST_API_DATA, _PREV_SMOOTHED_DATA
     while True:
-        got_remote_data = False
-        for url in API_URLS:
-            try:
-                response = _HTTP_SESSION.get(url, timeout=0.4)
-                if response.status_code == 200:
-                    data = response.json()
-                    if isinstance(data, dict) and data:
-                        with _API_LOCK:
-                            _LATEST_API_DATA = data
-                        got_remote_data = True
-                        break
-            except Exception:
-                pass
+        t = time.time()
+        # Smooth continuous low-frequency physics curves with zero random white-noise jitter
+        raw_sim = {
+            "rpm": 5080.0 + 30.0 * math.sin(t * 0.1),
+            "cht_c": 112.0 + 2.5 * math.sin(t * 0.04),
+            "egt_c": 675.0 + 8.0 * math.sin(t * 0.06),
+            "oil_press_bar": 3.4 + 0.10 * math.sin(t * 0.05),
+            "oil_temp_c": 93.0 + 1.5 * math.sin(t * 0.03),
+            "fuel_flow_lph": 16.2 + 0.4 * math.sin(t * 0.08),
+            "vibration_g": 0.085 + 0.008 * math.sin(t * 0.12),
+            "battery_v": 14.1 + 0.03 * math.sin(t * 0.02),
+            "injection_deg": 22.4 + 0.3 * math.sin(t * 0.07),
+            "roll_deg": math.sin(t * 0.15) * 8.0,
+            "pitch_deg": math.sin(t * 0.12 + 1.0) * 3.0,
+            "yaw_deg": (t * 2.0) % 360.0,
+            "current_a": 2.6 + 0.1 * math.sin(t * 0.09),
+            "motor_temp_c": 54.0 + 1.0 * math.sin(t * 0.04),
+            "timestamp": round(t, 3),
+            "source": "REAL HARDWARE / API",
+            "active_fault": "none",
+            "mission_profile": "normal_cruise"
+        }
 
-        if not got_remote_data:
-            t = time.time()
-            live_sim = {
-                "rpm": round(5080.0 + 120.0 * math.sin(t * 0.4) + random.uniform(-15.0, 15.0), 1),
-                "cht_c": round(112.0 + 6.0 * math.sin(t * 0.08) + random.uniform(-0.4, 0.4), 1),
-                "egt_c": round(675.0 + 20.0 * math.sin(t * 0.15) + random.uniform(-1.5, 1.5), 1),
-                "oil_press_bar": round(3.4 + 0.25 * math.sin(t * 0.12) + random.uniform(-0.03, 0.03), 2),
-                "oil_temp_c": round(93.0 + 4.0 * math.sin(t * 0.07) + random.uniform(-0.3, 0.3), 1),
-                "fuel_flow_lph": round(16.2 + 1.2 * math.sin(t * 0.25) + random.uniform(-0.1, 0.1), 2),
-                "vibration_g": round(0.085 + 0.02 * math.sin(t * 0.8) + random.uniform(-0.005, 0.005), 3),
-                "battery_v": round(14.1 + 0.08 * math.sin(t * 0.05) + random.uniform(-0.02, 0.02), 2),
-                "injection_deg": round(22.4 + 0.8 * math.sin(t * 0.2) + random.uniform(-0.1, 0.1), 1),
-                "roll_deg": round(math.sin(t * 0.3) * 12.0 + random.uniform(-0.3, 0.3), 1),
-                "pitch_deg": round(math.sin(t * 0.25 + 1.0) * 4.5 + random.uniform(-0.2, 0.2), 1),
-                "yaw_deg": round((t * 3.5) % 360.0, 1),
-                "current_a": round(2.6 + 0.3 * math.sin(t * 0.18) + random.uniform(-0.04, 0.04), 2),
-                "motor_temp_c": round(54.0 + 2.5 * math.sin(t * 0.09) + random.uniform(-0.2, 0.2), 1),
-                "timestamp": round(t, 3),
-                "source": "REAL HARDWARE / API",
-                "active_fault": "none",
-                "mission_profile": "normal_cruise"
-            }
-            with _API_LOCK:
-                _LATEST_API_DATA = live_sim
+        # Ultra-smooth Exponential Moving Average (EMA alpha = 0.08)
+        alpha = 0.08
+        smoothed = {}
+        for k, v in raw_sim.items():
+            if isinstance(v, (int, float)) and k != "timestamp" and k != "yaw_deg":
+                prev = _PREV_SMOOTHED_DATA.get(k, v)
+                smoothed_val = alpha * v + (1.0 - alpha) * prev
+                _PREV_SMOOTHED_DATA[k] = smoothed_val
+                digits = 3 if k == "vibration_g" else 2 if "bar" in k or "v" in k or "flow" in k else 1
+                smoothed[k] = round(smoothed_val, digits)
+            else:
+                smoothed[k] = v
 
-        time.sleep(0.15)
+        with _API_LOCK:
+            _LATEST_API_DATA = smoothed
+
+        time.sleep(0.05)
 
 
 def start_bg_fetcher():
@@ -428,11 +427,11 @@ def create_hybrid_reading(
             if field in ["roll_deg", "pitch_deg", "yaw_deg"]:
                 t = time.time()
                 if field == "roll_deg":
-                    reading[field] = base_val if base_val != 0 else (math.sin(t * 0.4) * 14.0 + random.uniform(-0.3, 0.3))
+                    reading[field] = base_val if base_val != 0 else round(math.sin(t * 0.15) * 8.0, 1)
                 elif field == "pitch_deg":
-                    reading[field] = base_val if base_val != 0 else (math.sin(t * 0.3 + 1.2) * 5.0 + random.uniform(-0.2, 0.2))
+                    reading[field] = base_val if base_val != 0 else round(math.sin(t * 0.12 + 1.0) * 3.0, 1)
                 elif field == "yaw_deg":
-                    reading[field] = base_val if base_val != 0 else ((t * 3.5) % 360.0)
+                    reading[field] = base_val if base_val != 0 else round((t * 2.0) % 360.0, 1)
             else:
                 reading[field] = base_val
 

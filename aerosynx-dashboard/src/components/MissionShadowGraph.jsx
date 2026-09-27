@@ -73,12 +73,19 @@ export function MissionShadowGraph({ missionResult, packet }) {
   const [activeMission, setActiveMission] = useState(null);
   const [comparison, setComparison] = useState(null);
   
-  // Persistent Live History Array (Never erased)
-  const [liveHistory, setLiveHistory] = useState([]);
+  // Persistent Live History Array (Loaded from localStorage if navigating across tabs during an active mission)
+  const [liveHistory, setLiveHistory] = useState(() => {
+    try {
+      const saved = localStorage.getItem("aerosynx_live_telemetry_history");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   
-  // View Controls (5-minute mode is default!)
+  // View Controls (Default 3x stretch as requested by user!)
   const [viewMode, setViewMode] = useState("5min"); // "5min" (Default) | "full" | "15min"
-  const [xStretch, setXStretch] = useState(1.0);
+  const [xStretch, setXStretch] = useState(3.0);
   const [autoFitY, setAutoFitY] = useState(true);
   const [corridorWidth, setCorridorWidth] = useState(7.5); // +/- 7.5% tolerance corridor
 
@@ -87,6 +94,19 @@ export function MissionShadowGraph({ missionResult, packet }) {
 
   const startTimestampRef = useRef(null);
   const pollTimerRef = useRef(null);
+  const samplesRef = useRef([]);
+
+  // Load start timestamp from localStorage if returning from another tab
+  useEffect(() => {
+    if (!startTimestampRef.current) {
+      try {
+        const savedStart = localStorage.getItem("aerosynx_mission_start_time");
+        if (savedStart) {
+          startTimestampRef.current = parseFloat(savedStart);
+        }
+      } catch {}
+    }
+  }, []);
 
   // ------------------------------------------------------------
   // 1. Fetch Backend Shadow & Active Mission State
@@ -111,8 +131,16 @@ export function MissionShadowGraph({ missionResult, packet }) {
         const data = await res.json();
         if (data.active && data.active.mission_id) {
           setActiveMission(data.active);
-          if (!startTimestampRef.current && data.active.started_at) {
-            startTimestampRef.current = n(data.active.started_at, Date.now() / 1000);
+          if (!startTimestampRef.current) {
+            const savedStart = localStorage.getItem("aerosynx_mission_start_time");
+            if (savedStart) {
+              startTimestampRef.current = parseFloat(savedStart);
+            } else if (data.active.started_at) {
+              startTimestampRef.current = n(data.active.started_at, Date.now() / 1000);
+              try {
+                localStorage.setItem("aerosynx_mission_start_time", String(startTimestampRef.current));
+              } catch {}
+            }
           }
         } else {
           setActiveMission(null);
@@ -162,7 +190,7 @@ export function MissionShadowGraph({ missionResult, packet }) {
   }, [activeMission, fetchComparison, fetchActiveMission]);
 
   // ------------------------------------------------------------
-  // 2. Accumulate Telemetry History WITHOUT Erasing
+  // 2. Accumulate Telemetry History WITHOUT Erasing Across Tabs
   // ------------------------------------------------------------
 
   useEffect(() => {
@@ -172,10 +200,51 @@ export function MissionShadowGraph({ missionResult, packet }) {
     const nowSec = Date.now() / 1000;
     
     if (!startTimestampRef.current) {
-      startTimestampRef.current = nowSec;
+      try {
+        const savedStart = localStorage.getItem("aerosynx_mission_start_time");
+        if (savedStart) {
+          startTimestampRef.current = parseFloat(savedStart);
+        } else if (activeMission) {
+          startTimestampRef.current = nowSec;
+          localStorage.setItem("aerosynx_mission_start_time", String(nowSec));
+        }
+      } catch {
+        if (activeMission) startTimestampRef.current = nowSec;
+      }
     }
 
-    const elapsedMin = Math.max(0, (nowSec - startTimestampRef.current) / 60);
+    const elapsedSec = startTimestampRef.current ? Math.max(0, nowSec - startTimestampRef.current) : 0;
+    const elapsedMin = Math.max(0, elapsedSec / 60);
+
+    // Record point-to-point telemetry sample if mission is active
+    if (activeMission && packet.current_state) {
+      const rd = packet.current_state;
+      const sample = {
+        timeMin: Number(elapsedMin.toFixed(3)),
+        timeSec: Number(elapsedSec.toFixed(1)),
+        timestamp: nowSec,
+        reading: {
+          rpm: rd.rpm || 4950,
+          cht_c: rd.cht_c || 118,
+          egt_c: rd.egt_c || 705,
+          oil_press_bar: rd.oil_press_bar || 3.2,
+          oil_temp_c: rd.oil_temp_c || 92,
+          fuel_flow_lph: rd.fuel_flow_lph || 15.8,
+          vibration_g: rd.vibration_g || 0.14,
+          battery_v: rd.battery_v || 14.1,
+          altitude_ft: rd.altitude_ft || 5000,
+          speed_knots: rd.speed_knots || 120,
+          pitch_deg: rd.pitch_deg || 0,
+          roll_deg: rd.roll_deg || 0,
+          yaw_deg: rd.yaw_deg || 0,
+          active_fault: packet.context?.active_fault || "none"
+        }
+      };
+
+      if (samplesRef.current.length === 0 || Math.abs(samplesRef.current[samplesRef.current.length - 1].timestamp - nowSec) > 0.2) {
+        samplesRef.current.push(sample);
+      }
+    }
 
     setLiveHistory((prev) => {
       if (prev.length > 0 && Math.abs(prev[prev.length - 1].timestamp - nowSec) < 0.2) {
@@ -186,12 +255,16 @@ export function MissionShadowGraph({ missionResult, packet }) {
         health: liveHealth,
         timestamp: nowSec,
       };
-      return [...prev, newPoint].slice(-5000);
+      const updated = [...prev, newPoint].slice(-5000);
+      try {
+        localStorage.setItem("aerosynx_live_telemetry_history", JSON.stringify(updated));
+      } catch {}
+      return updated;
     });
-  }, [packet]);
+  }, [packet, activeMission]);
 
   // ------------------------------------------------------------
-  // 3. User Actions (Lock & Start)
+  // 3. User Actions (Lock & Start & Stop)
   // ------------------------------------------------------------
 
   const handleLockShadow = async (mResult) => {
@@ -216,7 +289,16 @@ export function MissionShadowGraph({ missionResult, packet }) {
   const handleStartMission = async () => {
     setIsStarting(true);
     setLiveHistory([]);
-    startTimestampRef.current = Date.now() / 1000;
+    samplesRef.current = [];
+    try {
+      localStorage.removeItem("aerosynx_live_telemetry_history");
+    } catch {}
+
+    const startSec = Date.now() / 1000;
+    startTimestampRef.current = startSec;
+    try {
+      localStorage.setItem("aerosynx_mission_start_time", String(startSec));
+    } catch {}
 
     try {
       let targetInput = missionResult?.mission_input;
@@ -270,11 +352,47 @@ export function MissionShadowGraph({ missionResult, packet }) {
   const handleStopMission = async () => {
     setIsStopping(true);
     try {
+      const elapsedMin = startTimestampRef.current
+        ? Math.max(0.1, Number(((Date.now() / 1000 - startTimestampRef.current) / 60).toFixed(1)))
+        : 1.0;
+
       await fetch(`${API_BASE}/api/mission/stop`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason: "MANUAL_STOP" }),
+        body: JSON.stringify({ reason: "MANUAL_STOP", elapsed_minutes: elapsedMin }),
       });
+
+      // Save recorded mission with real elapsed flight duration
+      const missionId = activeMission?.mission_id || `MISSION-FLIGHT-${Date.now().toString().slice(-4)}`;
+      const missionName = (activeMission?.name || "TACTICAL FLIGHT RECORDING").toUpperCase();
+
+      const recordedMission = {
+        mission_id: missionId,
+        name: missionName,
+        date: new Date().toISOString().replace("T", " ").slice(0, 16),
+        duration_min: elapsedMin,
+        max_altitude_ft: activeMission?.max_altitude_ft || 5000,
+        status: "COMPLETED",
+        health_score: 95.0,
+        reading: packet?.current_state || packet?.reading || {},
+        phases: [
+          { phase: "FLIGHT RECORDING", duration_min: elapsedMin }
+        ]
+      };
+
+      try {
+        const saved = JSON.parse(localStorage.getItem("aerosynx_recorded_missions") || "[]");
+        const updated = [recordedMission, ...saved.filter(m => m.mission_id !== missionId && m.name !== missionName)];
+        localStorage.setItem("aerosynx_recorded_missions", JSON.stringify(updated));
+        window.dispatchEvent(new CustomEvent("aerosynx_mission_updated", { detail: { newMission: recordedMission } }));
+      } catch (err) {}
+
+      try {
+        localStorage.removeItem("aerosynx_live_telemetry_history");
+        localStorage.removeItem("aerosynx_mission_start_time");
+      } catch (err) {}
+
+      startTimestampRef.current = null;
       setActiveMission(null);
       setComparison(null);
     } catch { /* ignore */ } finally {
@@ -431,16 +549,16 @@ export function MissionShadowGraph({ missionResult, packet }) {
     return `${top} ${bot} Z`;
   }, [plannedPoints, xMin, xMax, yMin, yMax]);
 
-  // Live Telemetry Path (Stretches across window as telemetry streams in)
+  // Live Telemetry Path (Visible ONLY when activeMission is active!)
   const livePathD = useMemo(() => {
-    if (!liveHistory.length) return "";
+    if (!activeMission || !liveHistory.length) return "";
     return liveHistory.map((p, i) => {
       // In 5-min default stretch mode, scale live time X coordinate smoothly across full mission chart
       const scaledTime = viewMode === "5min" ? p.timeMin * liveTimeScaleFactor : p.timeMin;
       const clampedTime = Math.min(totalMissionDuration, scaledTime);
       return `${i === 0 ? "M" : "L"}${getX(clampedTime).toFixed(1)},${getY(p.health).toFixed(1)}`;
     }).join(" ");
-  }, [liveHistory, viewMode, liveTimeScaleFactor, totalMissionDuration, yMin, yMax]);
+  }, [activeMission, liveHistory, viewMode, liveTimeScaleFactor, totalMissionDuration, yMin, yMax]);
 
   const liveCursorX = getX(Math.min(totalMissionDuration, viewMode === "5min" ? latestLiveTime * liveTimeScaleFactor : latestLiveTime));
   const liveCursorY = getY(currentLiveHealth);
@@ -456,6 +574,88 @@ export function MissionShadowGraph({ missionResult, packet }) {
   const deltaScore = (currentLiveHealth - targetPlannedScore).toFixed(1);
   const isDeviated = Math.abs(currentLiveHealth - targetPlannedScore) > corridorWidth;
 
+  // Interactive Hover Crosshair & Tooltip State
+  const [hoverPoint, setHoverPoint] = useState(null);
+
+  const handleMouseMove = (e) => {
+    const svg = e.currentTarget;
+    const rect = svg.getBoundingClientRect();
+    const mouseX = ((e.clientX - rect.left) / rect.width) * svgWidth;
+    const mouseY = ((e.clientY - rect.top) / rect.height) * svgHeight;
+
+    if (mouseX >= padLeft && mouseX <= svgWidth - padRight) {
+      const ratio = (mouseX - padLeft) / chartW;
+      const hoveredTimeMin = Math.min(totalMissionDuration, Math.max(0, ratio * (xMax - xMin) + xMin));
+
+      // Find closest planned point
+      let closestPlanned = plannedPoints[0];
+      let minDiff = Infinity;
+      plannedPoints.forEach((p) => {
+        const diff = Math.abs(p.timeMin - hoveredTimeMin);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestPlanned = p;
+        }
+      });
+
+      // Find closest live telemetry point if activeMission exists
+      let liveHealth = null;
+      if (activeMission && liveHistory.length > 0) {
+        let minLiveDiff = Infinity;
+        liveHistory.forEach((l) => {
+          const lScaled = viewMode === "5min" ? l.timeMin * liveTimeScaleFactor : l.timeMin;
+          const diff = Math.abs(lScaled - hoveredTimeMin);
+          if (diff < minLiveDiff && diff <= 5) {
+            minLiveDiff = diff;
+            liveHealth = l.health;
+          }
+        });
+      }
+
+      setHoverPoint({
+        x: mouseX,
+        y: mouseY,
+        timeMin: hoveredTimeMin,
+        idealHealth: closestPlanned ? closestPlanned.idealHealth : 92.0,
+        upperCorridor: closestPlanned ? closestPlanned.upperCorridor : 99.5,
+        lowerCorridor: closestPlanned ? closestPlanned.lowerCorridor : 84.5,
+        phase: closestPlanned ? closestPlanned.phase : "CRUISE",
+        liveHealth: liveHealth,
+      });
+    } else {
+      setHoverPoint(null);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setHoverPoint(null);
+  };
+
+  // If no mission has been created yet, display standby creation card
+  if (!missionResult) {
+    return (
+      <div style={{
+        background: "#09131d",
+        border: "1px dashed #182a3d",
+        borderRadius: 14,
+        padding: "36px 20px",
+        textAlign: "center",
+        boxShadow: "0 12px 36px rgba(0, 0, 0, 0.5)",
+        fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+      }}>
+        <div style={{ fontSize: 10, fontWeight: 900, color: "#38c0e8", letterSpacing: "2px", marginBottom: 6 }}>
+          MISSIONGUARD • TRAJECTORY GRAPH
+        </div>
+        <div style={{ fontSize: 18, fontWeight: 800, color: "#f0f4f8", marginBottom: 6 }}>
+          NO MISSION PROFILE CREATED
+        </div>
+        <div style={{ fontSize: 12, color: "#8faec0", maxWidth: 520, margin: "0 auto" }}>
+          Configure flight parameters in <strong>MISSIONGUARD SIMULATOR</strong> below and click <span style={{ color: "#38c0e8", fontWeight: 800 }}>▶ CREATE MISSION</span> to generate the planned shadow ideal baseline & safety envelope.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{
       background: "#09131d",
@@ -465,6 +665,7 @@ export function MissionShadowGraph({ missionResult, packet }) {
       boxShadow: "0 12px 36px rgba(0, 0, 0, 0.5)",
       fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
       color: "#e1eaf2",
+      position: "relative",
     }}>
       {/* ── TOP ACTION HEADER ── */}
       <div style={{
@@ -495,10 +696,11 @@ export function MissionShadowGraph({ missionResult, packet }) {
               </span>
             ) : (
               <span style={{
-                fontSize: 10, fontWeight: 700, color: "#627d94",
-                background: "#0e1e2e", padding: "2px 8px", borderRadius: 4
+                fontSize: 10, fontWeight: 700, color: "#38c0e8",
+                background: "rgba(56, 192, 232, 0.1)", padding: "2px 10px",
+                borderRadius: 10, border: "1px solid rgba(56, 192, 232, 0.3)"
               }}>
-                SHADOW ENVELOPE SYNCHRONIZED
+                SHADOW ENVELOPE SYNCHRONIZED • AWAITING START
               </span>
             )}
           </div>
@@ -544,290 +746,408 @@ export function MissionShadowGraph({ missionResult, packet }) {
         </div>
       </div>
 
-      {/* ── KPI TELEMETRY & GRAPH (ONLY SHOWN WHEN ACTIVE MISSION IS RUNNING) ── */}
-      {!activeMission ? (
+      {/* ── INSTRUCTIONAL BANNER WHEN NOT STARTED YET ── */}
+      {!activeMission && (
         <div style={{
-          background: "#060d15",
-          border: "1px dashed #142436",
-          borderRadius: 10,
-          padding: "40px 20px",
-          textAlign: "center",
-          color: "#627d94",
+          background: "rgba(56, 192, 232, 0.08)",
+          border: "1px solid rgba(56, 192, 232, 0.25)",
+          borderRadius: 8,
+          padding: "10px 16px",
+          marginBottom: 16,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          fontSize: 11.5,
+          color: "#38c0e8",
+          fontWeight: 600,
         }}>
-          <div style={{ fontSize: 28, marginBottom: 8 }}>📡</div>
-          <div style={{ fontSize: 14, fontWeight: 800, color: "#8faec0", marginBottom: 4, letterSpacing: "1px" }}>
-            MISSION STANDBY • GRAPH INACTIVE
-          </div>
-          <div style={{ fontSize: 11, color: "#47657a", maxWidth: 460, margin: "0 auto" }}>
-            The shadow trajectory graph is hidden until a mission is active. Click <span style={{ color: "#00d69d", fontWeight: 800 }}>▶ START MISSION</span> above to initiate telemetry streaming and visualize the live shadow graph.
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 13, background: "#38c0e822", color: "#38c0e8", padding: "2px 6px", borderRadius: 4, fontWeight: 900, fontFamily: "monospace" }}>INFO</span>
+            <span>
+              <strong>IDEAL SHADOW TRAJECTORY LOADED:</strong> Showing planned baseline corridor for {totalMissionDuration}-min flight. Click <span style={{ color: "#00d69d", fontWeight: 800 }}>▶ START MISSION</span> above to initiate live telemetry streaming and compare actual flight vs ideal shadow.
+            </span>
           </div>
         </div>
-      ) : (
-        <>
-          {/* ── KPI TELEMETRY CARDS ── */}
-          <div style={{
-            display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 18,
-          }}>
-            {/* KPI 1 */}
-            <div style={{
-              background: "#0e1e2e", border: "1px solid #1a2b3e", borderRadius: 8, padding: "12px 14px",
-            }}>
-              <div style={{ fontSize: 9, fontWeight: 800, color: "#38c0e8", letterSpacing: "1px" }}>
-                PLANNED SHADOW (IDEAL)
-              </div>
-              <div style={{ fontSize: 22, fontWeight: 900, color: "#38c0e8", marginTop: 4, fontFamily: "monospace" }}>
-                {targetPlannedScore.toFixed(1)} <span style={{ fontSize: 12 }}>%</span>
-              </div>
-              <div style={{ fontSize: 10, color: "#627d94", marginTop: 2 }}>
-                Baseline trajectory target
-              </div>
-            </div>
-
-            {/* KPI 2 */}
-            <div style={{
-              background: isDeviated ? "rgba(231, 76, 60, 0.1)" : "rgba(0, 214, 157, 0.08)",
-              border: `1px solid ${isDeviated ? "#e74c3c" : "#00d69d33"}`,
-              borderRadius: 8, padding: "12px 14px",
-            }}>
-              <div style={{ fontSize: 9, fontWeight: 800, color: isDeviated ? "#e74c3c" : "#00d69d", letterSpacing: "1px" }}>
-                ACTUAL TELEMETRY
-              </div>
-              <div style={{
-                fontSize: 22, fontWeight: 900,
-                color: isDeviated ? "#e74c3c" : "#00d69d",
-                marginTop: 4, fontFamily: "monospace",
-              }}>
-                {currentLiveHealth.toFixed(1)} <span style={{ fontSize: 12 }}>%</span>
-              </div>
-              <div style={{ fontSize: 10, color: isDeviated ? "#f1948a" : "#7dcea0", marginTop: 2 }}>
-                Live composite reading
-              </div>
-            </div>
-
-            {/* KPI 3 */}
-            <div style={{
-              background: "#0e1e2e", border: "1px solid #1a2b3e", borderRadius: 8, padding: "12px 14px",
-            }}>
-              <div style={{ fontSize: 9, fontWeight: 800, color: "#8faec0", letterSpacing: "1px" }}>
-                VARIANCE (Δ)
-              </div>
-              <div style={{
-                fontSize: 22, fontWeight: 900,
-                color: Number(deltaScore) < -corridorWidth ? "#e74c3c" : "#e1eaf2",
-                marginTop: 4, fontFamily: "monospace"
-              }}>
-                {Number(deltaScore) > 0 ? `+${deltaScore}` : deltaScore} <span style={{ fontSize: 12, color: "#8faec0" }}>%</span>
-              </div>
-              <div style={{ fontSize: 10, color: "#627d94", marginTop: 2 }}>
-                Delta from baseline
-              </div>
-            </div>
-
-            {/* KPI 4 */}
-            <div style={{
-              background: "#0e1e2e", border: `1px solid ${isDeviated ? "#e74c3c" : "#00d69d44"}`,
-              borderRadius: 8, padding: "12px 14px",
-            }}>
-              <div style={{ fontSize: 9, fontWeight: 800, color: "#8faec0", letterSpacing: "1px" }}>
-                ENVELOPE STATUS
-              </div>
-              <div style={{
-                fontSize: 13, fontWeight: 800, color: isDeviated ? "#e74c3c" : "#00d69d",
-                marginTop: 6, display: "flex", alignItems: "center", gap: 6,
-              }}>
-                <span>{isDeviated ? "⚠️" : "🛡️"}</span>
-                {isDeviated ? "DEVIATION DETECTED" : "NOMINAL IN-ENVELOPE"}
-              </div>
-              <div style={{ fontSize: 10, color: "#627d94", marginTop: 4 }}>
-                Corridor width: ±{corridorWidth}%
-              </div>
-            </div>
-          </div>
-
-          {/* ── STRETCH & ZOOM CONTROLS BAR ── */}
-          <div style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            background: "#0d1b2a", border: "1px solid #1a2b3e",
-            borderRadius: 8, padding: "8px 14px", marginBottom: 12, gap: 14,
-          }}>
-            {/* View Mode Presets (5-min is DEFAULT) */}
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 9, fontWeight: 800, color: "#38c0e8", letterSpacing: "1px" }}>
-                VIEW MODE:
-              </span>
-              <button
-                onClick={() => setViewMode("5min")}
-                style={{
-                  background: viewMode === "5min" ? "#1a3b5c" : "transparent",
-                  color: viewMode === "5min" ? "#38c0e8" : "#8faec0",
-                  border: `1px solid ${viewMode === "5min" ? "#38c0e8" : "#1a2b3e"}`,
-                  borderRadius: 4, padding: "4px 10px", fontSize: 10, fontWeight: 700, cursor: "pointer",
-                }}
-              >
-                ⚡ 5-MIN ROLLING (DEFAULT)
-              </button>
-              <button
-                onClick={() => setViewMode("full")}
-                style={{
-                  background: viewMode === "full" ? "#1a3b5c" : "transparent",
-                  color: viewMode === "full" ? "#38c0e8" : "#8faec0",
-                  border: `1px solid ${viewMode === "full" ? "#38c0e8" : "#1a2b3e"}`,
-                  borderRadius: 4, padding: "4px 10px", fontSize: 10, fontWeight: 700, cursor: "pointer",
-                }}
-              >
-                🌐 FULL MISSION ({totalMissionDuration}M)
-              </button>
-            </div>
-
-            {/* Stretch Slider */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 9, fontWeight: 700, color: "#8faec0" }}>
-                ↔️ GRAPH STRETCH: {xStretch}x
-              </span>
-              <input
-                type="range" min="1.0" max="5.0" step="0.5"
-                value={xStretch} onChange={(e) => setXStretch(Number(e.target.value))}
-                style={{ width: 80, accentColor: "#38c0e8", cursor: "pointer" }}
-              />
-            </div>
-
-            {/* Auto Fit Y */}
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <label style={{ fontSize: 9, fontWeight: 700, color: "#8faec0", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-                <input
-                  type="checkbox" checked={autoFitY} onChange={(e) => setAutoFitY(e.target.checked)}
-                  style={{ accentColor: "#00d69d" }}
-                />
-                ↕️ AUTO-FIT Y
-              </label>
-            </div>
-          </div>
-
-          {/* ── MAIN SVG GRAPH CANVAS ── */}
-          <div style={{
-            position: "relative", background: "#060d15",
-            border: "1px solid #142436", borderRadius: 10, padding: "10px",
-          }}>
-            <svg
-              viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-              style={{ width: "100%", height: "auto", overflow: "visible" }}
-            >
-              <defs>
-                {/* Smooth Corridor Fill */}
-                <linearGradient id="corridorFillGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#38c0e8" stopOpacity="0.18" />
-                  <stop offset="100%" stopColor="#38c0e8" stopOpacity="0.04" />
-                </linearGradient>
-              </defs>
-
-              {/* Horizontal Gridlines */}
-              {Array.from({ length: 5 }).map((_, idx) => {
-                const hVal = yMin + (yMax - yMin) * (idx / 4);
-                const y = getY(hVal);
-                return (
-                  <g key={idx}>
-                    <line
-                      x1={padLeft} y1={y} x2={svgWidth - padRight} y2={y}
-                      stroke="#102030" strokeWidth="1" strokeDasharray="3,3"
-                    />
-                    <text
-                      x={padLeft - 8} y={y + 3}
-                      fill="#47657a" fontSize="9" fontFamily="monospace" textAnchor="end"
-                    >
-                      {hVal.toFixed(0)}%
-                    </text>
-                  </g>
-                );
-              })}
-
-              {/* Time Labels on X-Axis (Spans FULL Mission 0 to totalMissionDuration) */}
-              {Array.from({ length: 7 }).map((_, idx) => {
-                const tVal = (totalMissionDuration / 6) * idx;
-                const x = getX(tVal);
-                return (
-                  <g key={idx}>
-                    <line
-                      x1={x} y1={padTop} x2={x} y2={svgHeight - padBottom}
-                      stroke="#102030" strokeWidth="1" strokeDasharray="4,4"
-                    />
-                    <text
-                      x={x} y={svgHeight - 16}
-                      fill="#47657a" fontSize="9" fontFamily="monospace" textAnchor="middle"
-                    >
-                      {tVal.toFixed(1)}m
-                    </text>
-                  </g>
-                );
-              })}
-
-              {/* 1. PLANNED SHADOW ENVELOPE CORRIDOR (Spans 100% of Entire Mission: 0 to totalMissionDuration) */}
-              {corridorPathD && (
-                <path
-                  d={corridorPathD}
-                  fill="url(#corridorFillGrad)"
-                  stroke="rgba(56, 192, 232, 0.35)" strokeWidth="1" strokeDasharray="2,2"
-                />
-              )}
-
-              {/* 2. PLANNED SHADOW BASELINE (Spans 100% of Entire Mission) */}
-              {plannedPathD && (
-                <path
-                  d={plannedPathD}
-                  fill="none" stroke="#38c0e8" strokeWidth="2.5" strokeDasharray="6,4" opacity="0.9"
-                />
-              )}
-
-              {/* Checkpoint Dots */}
-              {plannedPoints.map((p, idx) => (
-                <g key={idx} transform={`translate(${getX(p.timeMin)}, ${getY(p.idealHealth)})`}>
-                  <circle r="3.5" fill="#38c0e8" stroke="#060d15" strokeWidth="1.5" />
-                </g>
-              ))}
-
-              {/* 3. ACTUAL TELEMETRY LINE (Stretches across graph window continuously) */}
-              {livePathD && (
-                <path
-                  d={livePathD}
-                  fill="none"
-                  stroke={isDeviated ? "#e74c3c" : "#00d69d"}
-                  strokeWidth="3"
-                />
-              )}
-
-              {/* 4. LIVE TELEMETRY CURSOR */}
-              {activeMission && (
-                <g transform={`translate(${liveCursorX}, ${liveCursorY})`}>
-                  <circle r="8" fill="none" stroke={isDeviated ? "#e74c3c" : "#00d69d"} strokeWidth="1" opacity="0.6" />
-                  <circle r="4" fill={isDeviated ? "#e74c3c" : "#00d69d"} />
-                </g>
-              )}
-
-              {/* Chart Frame */}
-              <rect x={padLeft} y={padTop} width={chartW} height={chartH} fill="none" stroke="#122538" strokeWidth="1" />
-            </svg>
-
-            {/* Legend Overlay */}
-            <div style={{
-              position: "absolute", top: 16, right: 20, display: "flex", alignItems: "center", gap: 14,
-              background: "#09131d", border: "1px solid #182a3d",
-              borderRadius: 6, padding: "5px 12px", fontSize: 9, fontWeight: 700,
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ width: 12, height: 2, background: "#38c0e8", display: "inline-block" }} />
-                <span style={{ color: "#38c0e8" }}>PLANNED SHADOW (IDEAL)</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ width: 12, height: 8, background: "rgba(56, 192, 232, 0.2)", border: "1px dashed #38c0e8", display: "inline-block" }} />
-                <span style={{ color: "#8faec0" }}>FULL MISSION ENVELOPE (0-{totalMissionDuration}M)</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ width: 12, height: 3, background: "#00d69d", display: "inline-block" }} />
-                <span style={{ color: "#00d69d" }}>ACTUAL TELEMETRY</span>
-              </div>
-            </div>
-          </div>
-        </>
       )}
+
+      {/* ── KPI TELEMETRY CARDS ── */}
+      <div style={{
+        display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 18,
+      }}>
+        {/* KPI 1: PLANNED SHADOW */}
+        <div style={{
+          background: "#0e1e2e", border: "1px solid #1a2b3e", borderRadius: 8, padding: "12px 14px",
+        }}>
+          <div style={{ fontSize: 9, fontWeight: 800, color: "#38c0e8", letterSpacing: "1px" }}>
+            PLANNED SHADOW (IDEAL)
+          </div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: "#38c0e8", marginTop: 4, fontFamily: "monospace" }}>
+            {targetPlannedScore.toFixed(1)} <span style={{ fontSize: 12 }}>%</span>
+          </div>
+          <div style={{ fontSize: 10, color: "#627d94", marginTop: 2 }}>
+            Baseline trajectory target
+          </div>
+        </div>
+
+        {/* KPI 2: ACTUAL TELEMETRY */}
+        <div style={{
+          background: !activeMission && liveHistory.length === 0 ? "#0e1e2e" : (isDeviated ? "rgba(231, 76, 60, 0.1)" : "rgba(0, 214, 157, 0.08)"),
+          border: `1px solid ${!activeMission && liveHistory.length === 0 ? "#1a2b3e" : (isDeviated ? "#e74c3c" : "#00d69d33")}`,
+          borderRadius: 8, padding: "12px 14px",
+        }}>
+          <div style={{ fontSize: 9, fontWeight: 800, color: !activeMission && liveHistory.length === 0 ? "#8faec0" : (isDeviated ? "#e74c3c" : "#00d69d"), letterSpacing: "1px" }}>
+            ACTUAL TELEMETRY
+          </div>
+          <div style={{
+            fontSize: activeMission || liveHistory.length > 0 ? 22 : 15,
+            fontWeight: 900,
+            color: !activeMission && liveHistory.length === 0 ? "#627d94" : (isDeviated ? "#e74c3c" : "#00d69d"),
+            marginTop: activeMission || liveHistory.length > 0 ? 4 : 8,
+            fontFamily: "monospace",
+          }}>
+            {activeMission || liveHistory.length > 0 ? (
+              <>{currentLiveHealth.toFixed(1)} <span style={{ fontSize: 12 }}>%</span></>
+            ) : (
+              "AWAITING START"
+            )}
+          </div>
+          <div style={{ fontSize: 10, color: "#627d94", marginTop: 2 }}>
+            {activeMission ? "Live telemetry active" : "Press ▶ START MISSION"}
+          </div>
+        </div>
+
+        {/* KPI 3: VARIANCE */}
+        <div style={{
+          background: "#0e1e2e", border: "1px solid #1a2b3e", borderRadius: 8, padding: "12px 14px",
+        }}>
+          <div style={{ fontSize: 9, fontWeight: 800, color: "#8faec0", letterSpacing: "1px" }}>
+            VARIANCE (Δ)
+          </div>
+          <div style={{
+            fontSize: activeMission || liveHistory.length > 0 ? 22 : 15,
+            fontWeight: 900,
+            color: activeMission || liveHistory.length > 0 ? (Number(deltaScore) < -corridorWidth ? "#e74c3c" : "#e1eaf2") : "#627d94",
+            marginTop: activeMission || liveHistory.length > 0 ? 4 : 8,
+            fontFamily: "monospace"
+          }}>
+            {activeMission || liveHistory.length > 0 ? (
+              <>{Number(deltaScore) > 0 ? `+${deltaScore}` : deltaScore} <span style={{ fontSize: 12, color: "#8faec0" }}>%</span></>
+            ) : (
+              "STANDBY"
+            )}
+          </div>
+          <div style={{ fontSize: 10, color: "#627d94", marginTop: 2 }}>
+            Delta from baseline
+          </div>
+        </div>
+
+        {/* KPI 4: ENVELOPE STATUS */}
+        <div style={{
+          background: "#0e1e2e", border: `1px solid ${activeMission ? (isDeviated ? "#e74c3c" : "#00d69d44") : "#1a2b3e"}`,
+          borderRadius: 8, padding: "12px 14px",
+        }}>
+          <div style={{ fontSize: 9, fontWeight: 800, color: "#8faec0", letterSpacing: "1px" }}>
+            ENVELOPE STATUS
+          </div>
+          <div style={{
+            fontSize: 12, fontWeight: 800, color: activeMission ? (isDeviated ? "#e74c3c" : "#00d69d") : "#38c0e8",
+            marginTop: 6, display: "flex", alignItems: "center", gap: 6,
+          }}>
+            <span style={{
+              width: 8, height: 8, borderRadius: "50%",
+              background: activeMission ? (isDeviated ? "#e74c3c" : "#00d69d") : "#38c0e8",
+              boxShadow: `0 0 8px ${activeMission ? (isDeviated ? "#e74c3c" : "#00d69d") : "#38c0e8"}`
+            }} />
+            {activeMission ? (isDeviated ? "DEVIATION DETECTED" : "NOMINAL IN-ENVELOPE") : "READY TO EXECUTE"}
+          </div>
+          <div style={{ fontSize: 10, color: "#627d94", marginTop: 4 }}>
+            Corridor width: ±{corridorWidth}%
+          </div>
+        </div>
+      </div>
+
+      {/* ── STRETCH & ZOOM CONTROLS BAR ── */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        background: "#0d1b2a", border: "1px solid #1a2b3e",
+        borderRadius: 8, padding: "8px 14px", marginBottom: 12, gap: 14,
+      }}>
+        {/* View Mode Presets (5-min is DEFAULT) */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 9, fontWeight: 800, color: "#38c0e8", letterSpacing: "1px" }}>
+            VIEW MODE:
+          </span>
+          <button
+            onClick={() => setViewMode("5min")}
+            style={{
+              background: viewMode === "5min" ? "#1a3b5c" : "transparent",
+              color: viewMode === "5min" ? "#38c0e8" : "#8faec0",
+              border: `1px solid ${viewMode === "5min" ? "#38c0e8" : "#1a2b3e"}`,
+              borderRadius: 4, padding: "4px 10px", fontSize: 10, fontWeight: 700, cursor: "pointer",
+            }}
+          >
+            5-MIN ROLLING (DEFAULT)
+          </button>
+          <button
+            onClick={() => setViewMode("full")}
+            style={{
+              background: viewMode === "full" ? "#1a3b5c" : "transparent",
+              color: viewMode === "full" ? "#38c0e8" : "#8faec0",
+              border: `1px solid ${viewMode === "full" ? "#38c0e8" : "#1a2b3e"}`,
+              borderRadius: 4, padding: "4px 10px", fontSize: 10, fontWeight: 700, cursor: "pointer",
+            }}
+          >
+            FULL MISSION ({totalMissionDuration}M)
+          </button>
+        </div>
+
+        {/* Stretch Slider */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, color: "#8faec0" }}>
+            STRETCH: {xStretch}x
+          </span>
+          <input
+            type="range" min="1.0" max="5.0" step="0.5"
+            value={xStretch} onChange={(e) => setXStretch(Number(e.target.value))}
+            style={{ width: 80, accentColor: "#38c0e8", cursor: "pointer" }}
+          />
+        </div>
+
+        {/* Auto Fit Y */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <label style={{ fontSize: 9, fontWeight: 700, color: "#8faec0", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+            <input
+              type="checkbox" checked={autoFitY} onChange={(e) => setAutoFitY(e.target.checked)}
+              style={{ accentColor: "#00d69d" }}
+            />
+            AUTO-FIT Y
+          </label>
+        </div>
+      </div>
+
+      {/* ── MAIN SVG GRAPH CANVAS ── */}
+      <div style={{
+        position: "relative", background: "#060d15",
+        border: "1px solid #142436", borderRadius: 10, padding: "10px",
+        cursor: "crosshair",
+      }}>
+        <svg
+          viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+          style={{ width: "100%", height: "auto", overflow: "visible", shapeRendering: "geometricPrecision" }}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+        >
+          <defs>
+            {/* Smooth Corridor Gradient */}
+            <linearGradient id="corridorFillGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#38c0e8" stopOpacity="0.22" />
+              <stop offset="50%" stopColor="#38c0e8" stopOpacity="0.10" />
+              <stop offset="100%" stopColor="#38c0e8" stopOpacity="0.03" />
+            </linearGradient>
+
+            {/* Glow Filter Cyan (Planned Baseline) */}
+            <filter id="glowCyan" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="2.5" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+
+            {/* Glow Filter Green (Live Telemetry Nominal) */}
+            <filter id="glowGreen" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+
+            {/* Glow Filter Red (Live Telemetry Deviated) */}
+            <filter id="glowRed" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3.5" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          {/* Horizontal Gridlines */}
+          {Array.from({ length: 5 }).map((_, idx) => {
+            const hVal = yMin + (yMax - yMin) * (idx / 4);
+            const y = getY(hVal);
+            return (
+              <g key={idx}>
+                <line
+                  x1={padLeft} y1={y} x2={svgWidth - padRight} y2={y}
+                  stroke="#122538" strokeWidth="1" strokeDasharray="3,3"
+                />
+                <text
+                  x={padLeft - 8} y={y + 3}
+                  fill="#627d94" fontSize="9.5" fontFamily="'JetBrains Mono', monospace" fontWeight="700" textAnchor="end"
+                >
+                  {hVal.toFixed(0)}%
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Time Labels on X-Axis (Spans FULL Mission 0 to totalMissionDuration) */}
+          {Array.from({ length: 7 }).map((_, idx) => {
+            const tVal = (totalMissionDuration / 6) * idx;
+            const x = getX(tVal);
+            return (
+              <g key={idx}>
+                <line
+                  x1={x} y1={padTop} x2={x} y2={svgHeight - padBottom}
+                  stroke="#122538" strokeWidth="1" strokeDasharray="4,4"
+                />
+                <text
+                  x={x} y={svgHeight - 16}
+                  fill="#627d94" fontSize="9.5" fontFamily="'JetBrains Mono', monospace" fontWeight="700" textAnchor="middle"
+                >
+                  {tVal.toFixed(1)}m
+                </text>
+              </g>
+            );
+          })}
+
+          {/* 1. PLANNED SHADOW ENVELOPE CORRIDOR (Spans 100% of Entire Mission: 0 to totalMissionDuration) */}
+          {corridorPathD && (
+            <path
+              d={corridorPathD}
+              fill="url(#corridorFillGrad)"
+              stroke="rgba(56, 192, 232, 0.4)" strokeWidth="1.5" strokeDasharray="4,3"
+            />
+          )}
+
+          {/* 2. PLANNED SHADOW BASELINE (Solid, Crisp, Glowing Cyan Vector Line) */}
+          {plannedPathD && (
+            <path
+              d={plannedPathD}
+              fill="none" stroke="#38c0e8" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" filter="url(#glowCyan)" opacity="0.95"
+            />
+          )}
+
+          {/* Checkpoint Target Nodes */}
+          {plannedPoints.map((p, idx) => (
+            <g key={idx} transform={`translate(${getX(p.timeMin)}, ${getY(p.idealHealth)})`}>
+              <circle r="4" fill="#38c0e8" stroke="#060d15" strokeWidth="2" />
+              <circle r="2" fill="#ffffff" />
+            </g>
+          ))}
+
+          {/* 3. ACTUAL LIVE TELEMETRY LINE (High-Visibility Solid Glowing Emerald / Crimson Vector Line) */}
+          {livePathD && (
+            <path
+              d={livePathD}
+              fill="none"
+              stroke={isDeviated ? "#ff3344" : "#00e6a8"}
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              filter={isDeviated ? "url(#glowRed)" : "url(#glowGreen)"}
+            />
+          )}
+
+          {/* 4. LIVE TELEMETRY CURSOR */}
+          {activeMission && (
+            <g transform={`translate(${liveCursorX}, ${liveCursorY})`}>
+              <circle r="10" fill="none" stroke={isDeviated ? "#ff3344" : "#00e6a8"} strokeWidth="1.5" opacity="0.7">
+                <animate attributeName="r" values="6;12;6" dur="1.5s" repeatCount="indefinite" />
+              </circle>
+              <circle r="5" fill={isDeviated ? "#ff3344" : "#00e6a8"} stroke="#060d15" strokeWidth="2" />
+            </g>
+          )}
+
+          {/* 5. INTERACTIVE HOVER CROSSHAIR CURSOR & NODES */}
+          {hoverPoint && (
+            <g>
+              <line
+                x1={hoverPoint.x} y1={padTop}
+                x2={hoverPoint.x} y2={svgHeight - padBottom}
+                stroke="#38c0e8" strokeWidth="1.5" strokeDasharray="3,3" opacity="0.8"
+              />
+              <circle
+                cx={hoverPoint.x} cy={getY(hoverPoint.idealHealth)}
+                r="5" fill="#38c0e8" stroke="#ffffff" strokeWidth="2"
+              />
+              {hoverPoint.liveHealth !== null && (
+                <circle
+                  cx={hoverPoint.x} cy={getY(hoverPoint.liveHealth)}
+                  r="5" fill={Math.abs(hoverPoint.liveHealth - hoverPoint.idealHealth) > corridorWidth ? "#ff3344" : "#00e6a8"} stroke="#ffffff" strokeWidth="2"
+                />
+              )}
+            </g>
+          )}
+
+          {/* Chart Outer Border Frame */}
+          <rect x={padLeft} y={padTop} width={chartW} height={chartH} fill="none" stroke="#1c3652" strokeWidth="1.5" />
+        </svg>
+
+        {/* Floating High-Tech Interactive Hover Tooltip Overlay */}
+        {hoverPoint && (
+          <div style={{
+            position: "absolute",
+            left: Math.min(svgWidth - 240, Math.max(padLeft, hoverPoint.x + 15)),
+            top: Math.max(padTop + 10, hoverPoint.y - 70),
+            pointerEvents: "none",
+            background: "rgba(9, 19, 29, 0.95)",
+            border: "1px solid #38c0e8",
+            borderRadius: 8,
+            padding: "10px 14px",
+            color: "#e1eaf2",
+            fontSize: 11,
+            fontFamily: "'JetBrains Mono', monospace",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
+            backdropFilter: "blur(8px)",
+            zIndex: 10,
+          }}>
+            <div style={{ fontWeight: 800, color: "#38c0e8", marginBottom: 4, display: "flex", justifyContent: "space-between", gap: 10 }}>
+              <span>TIME = {hoverPoint.timeMin.toFixed(1)}m</span>
+              <span style={{ color: "#8faec0", fontSize: 10 }}>{hoverPoint.phase}</span>
+            </div>
+            <div style={{ color: "#38c0e8" }}>
+              IDEAL TARGET: <strong>{hoverPoint.idealHealth.toFixed(1)}%</strong>
+            </div>
+            <div style={{ color: "#627d94", fontSize: 9.5 }}>
+              SAFETY CORRIDOR: [{hoverPoint.lowerCorridor.toFixed(1)}% - {hoverPoint.upperCorridor.toFixed(1)}%]
+            </div>
+            <div style={{ color: hoverPoint.liveHealth !== null ? (Math.abs(hoverPoint.liveHealth - hoverPoint.idealHealth) > corridorWidth ? "#ff3344" : "#00e6a8") : "#8faec0", marginTop: 2 }}>
+              ACTUAL FLIGHT: <strong>{hoverPoint.liveHealth !== null ? hoverPoint.liveHealth.toFixed(1) + '%' : 'AWAITING START'}</strong>
+            </div>
+            {hoverPoint.liveHealth !== null && (
+              <div style={{ color: Math.abs(hoverPoint.liveHealth - hoverPoint.idealHealth) > corridorWidth ? "#ff3344" : "#00e6a8", fontSize: 10, fontWeight: 700, marginTop: 2 }}>
+                Δ: {(hoverPoint.liveHealth - hoverPoint.idealHealth) > 0 ? `+${(hoverPoint.liveHealth - hoverPoint.idealHealth).toFixed(1)}` : (hoverPoint.liveHealth - hoverPoint.idealHealth).toFixed(1)}% ({Math.abs(hoverPoint.liveHealth - hoverPoint.idealHealth) > corridorWidth ? 'DEVIATED' : 'NOMINAL'})
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Legend Overlay */}
+        <div style={{
+          position: "absolute", top: 16, right: 20, display: "flex", alignItems: "center", gap: 16,
+          background: "rgba(9, 19, 29, 0.92)", border: "1px solid #1c3854",
+          borderRadius: 6, padding: "7px 14px", fontSize: 9.5, fontWeight: 800, backdropFilter: "blur(6px)",
+          boxShadow: "0 4px 16px rgba(0,0,0,0.5)"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ width: 14, height: 3, background: "#38c0e8", borderRadius: 2, display: "inline-block", boxShadow: "0 0 8px #38c0e8" }} />
+            <span style={{ color: "#38c0e8", letterSpacing: "0.5px" }}>PLANNED SHADOW (IDEAL BASELINE)</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ width: 14, height: 10, background: "rgba(56, 192, 232, 0.25)", border: "1px dashed #38c0e8", borderRadius: 2, display: "inline-block" }} />
+            <span style={{ color: "#8faec0", letterSpacing: "0.5px" }}>SAFETY ENVELOPE (±{corridorWidth}%)</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ width: 14, height: 3.5, background: activeMission ? (isDeviated ? "#ff3344" : "#00e6a8") : "#627d94", borderRadius: 2, display: "inline-block", boxShadow: activeMission ? `0 0 8px ${isDeviated ? "#ff3344" : "#00e6a8"}` : "none" }} />
+            <span style={{ color: activeMission ? (isDeviated ? "#ff3344" : "#00e6a8") : "#627d94", letterSpacing: "0.5px" }}>
+              {activeMission ? "LIVE FLIGHT TELEMETRY (ACTUAL)" : "LIVE TELEMETRY (AWAITING START)"}
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
