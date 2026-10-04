@@ -928,7 +928,7 @@ export default function VirtualEngine({ externalFault, onTelemetryUpdate, onFaul
       if (cancelled) return;
 
       setDataSourceStatus(
-        "Connecting to ESP32..."
+        "Connecting... Please connect ESP32 hardware"
       );
 
       try {
@@ -1039,7 +1039,7 @@ export default function VirtualEngine({ externalFault, onTelemetryUpdate, onFaul
           if (cancelled) return;
 
           setDataSourceStatus(
-            "Signal lost -- reconnecting... (showing last known values)"
+            "ESP32 Disconnected -- Please connect hardware (retrying...)"
           );
 
           reconnectTimer =
@@ -1056,7 +1056,7 @@ export default function VirtualEngine({ externalFault, onTelemetryUpdate, onFaul
         };
       } catch {
         setDataSourceStatus(
-          "ESP32 connection failed -- retrying..."
+          "ESP32 Disconnected -- Please connect hardware (retrying...)"
         );
 
         reconnectTimer =
@@ -3600,17 +3600,19 @@ export default function VirtualEngine({ externalFault, onTelemetryUpdate, onFaul
                   fontWeight: 700,
                   letterSpacing: "0.06em",
                   color:
-                    hardwareMode === "live"
-                      ? COLORS.green
-                      : COLORS.amber,
+                    hardwareMode === "mock"
+                      ? COLORS.amber
+                      : dataSourceStatus.startsWith("Live")
+                        ? COLORS.green
+                        : "#ef4444",
                 }}
               >
                 {hardwareMode === "mock"
                   ? "● MOCK"
                   : dataSourceStatus.startsWith("Live")
                     ? "● LIVE"
-                    : dataSourceStatus.startsWith("Signal lost")
-                      ? "● SIGNAL LOST"
+                    : dataSourceStatus.includes("Disconnected")
+                      ? "● DISCONNECTED"
                       : "● CONNECTING"}
               </span>
             </div>
@@ -3618,8 +3620,9 @@ export default function VirtualEngine({ externalFault, onTelemetryUpdate, onFaul
             <div
               style={{
                 fontSize: 9,
-                color: "#4a5665",
+                color: dataSourceStatus.includes("Disconnected") ? "#ef4444" : "#4a5665",
                 marginTop: 2,
+                fontWeight: dataSourceStatus.includes("Disconnected") ? 600 : 400
               }}
             >
               {dataSourceStatus}
