@@ -84,7 +84,7 @@ const MISSION_PROFILES = [
 // HARDWARE DATA SOURCE
 // ==========================================================
 
-const DEFAULT_HARDWARE_MODE = "live";
+const DEFAULT_HARDWARE_MODE = "mock";
 
 const WS_URL = "ws://esp32-sensor.local:81";
 
@@ -649,7 +649,7 @@ export default function VirtualEngine({ externalFault, onTelemetryUpdate, onFaul
     useState(false);
 
   const [soundOn, setSoundOn] =
-    useState(true);
+    useState(false);
 
   const [engineRunning, setEngineRunning] =
     useState(true);
@@ -674,7 +674,7 @@ export default function VirtualEngine({ externalFault, onTelemetryUpdate, onFaul
     });
   }, []);
 
-  const soundOnRef = useRef(true);
+  const soundOnRef = useRef(false);
   const audioReadyRef = useRef(false); // tracks if AudioContext was created
 
   useEffect(() => {
@@ -3625,11 +3625,13 @@ export default function VirtualEngine({ externalFault, onTelemetryUpdate, onFaul
                       : COLORS.amber,
                 }}
               >
-                {dataSourceStatus.startsWith("Live")
-                  ? "● LIVE"
-                  : dataSourceStatus.startsWith("Signal lost")
-                    ? "● SIGNAL LOST"
-                    : "● MOCK"}
+                {hardwareMode === "mock"
+                  ? "● MOCK"
+                  : dataSourceStatus.startsWith("Live")
+                    ? "● LIVE"
+                    : dataSourceStatus.startsWith("Signal lost")
+                      ? "● SIGNAL LOST"
+                      : "● CONNECTING"}
               </span>
             </div>
 
