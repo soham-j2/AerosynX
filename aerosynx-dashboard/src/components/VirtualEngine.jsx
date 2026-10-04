@@ -787,30 +787,10 @@ export default function VirtualEngine({ externalFault, onTelemetryUpdate, onFaul
     });
   }, [initAudio]);
 
-  // On first user gesture: resume the pre-built (suspended) AudioContext
-  useEffect(() => {
-    const onFirstGesture = () => {
-      const a = audioRef.current;
-      if (!a.ctx) { initAudio(); }
-      if (a.ctx && a.ctx.state === "suspended") {
-        a.ctx.resume().then(() => {
-          // Context is now running — ramp engine hum to audible volume
-          if (soundOnRef.current && a.engineGain) {
-            a.engineGain.gain.cancelScheduledValues(a.ctx.currentTime);
-            a.engineGain.gain.setTargetAtTime(0.12, a.ctx.currentTime, 0.4);
-          }
-        });
-      }
-    };
-    window.addEventListener("click",       onFirstGesture, { once: true });
-    window.addEventListener("pointerdown", onFirstGesture, { once: true });
-    window.addEventListener("keydown",     onFirstGesture, { once: true });
-    return () => {
-      window.removeEventListener("click",       onFirstGesture);
-      window.removeEventListener("pointerdown", onFirstGesture);
-      window.removeEventListener("keydown",     onFirstGesture);
-    };
-  }, [initAudio]);
+  // NOTE: AudioContext is intentionally NOT initialised on first gesture.
+  // It is created only when the user explicitly clicks the sound toggle button.
+  // This prevents the browser from showing the "Access other apps and services"
+  // permission prompt on page load.
 
   // ========================================================
   // FAULT SELECTION
