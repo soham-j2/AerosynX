@@ -614,6 +614,12 @@ export default function VirtualEngine({ externalFault, onTelemetryUpdate, onFaul
     hardwareModeRef.current = hardwareMode;
   }, [hardwareMode]);
 
+  const [wsConnected, setWsConnected] = useState(false);
+  const wsConnectedRef = useRef(wsConnected);
+  useEffect(() => {
+    wsConnectedRef.current = wsConnected;
+  }, [wsConnected]);
+
   const [
     dataSourceStatus,
     setDataSourceStatus,
@@ -937,6 +943,7 @@ export default function VirtualEngine({ externalFault, onTelemetryUpdate, onFaul
         );
 
         ws.onopen = () => {
+          setWsConnected(true);
           setDataSourceStatus(
             "Live -- ESP32 connected"
           );
@@ -1036,6 +1043,7 @@ export default function VirtualEngine({ externalFault, onTelemetryUpdate, onFaul
         };
 
         ws.onclose = () => {
+          setWsConnected(false);
           if (cancelled) return;
 
           setDataSourceStatus(
@@ -1050,11 +1058,13 @@ export default function VirtualEngine({ externalFault, onTelemetryUpdate, onFaul
         };
 
         ws.onerror = () => {
+          setWsConnected(false);
           if (ws) {
             ws.close();
           }
         };
       } catch {
+        setWsConnected(false);
         setDataSourceStatus(
           "ESP32 Disconnected -- Please connect hardware (retrying...)"
         );
@@ -1071,6 +1081,7 @@ export default function VirtualEngine({ externalFault, onTelemetryUpdate, onFaul
 
     return () => {
       cancelled = true;
+      setWsConnected(false);
 
       clearTimeout(
         reconnectTimer
@@ -1146,8 +1157,8 @@ export default function VirtualEngine({ externalFault, onTelemetryUpdate, onFaul
                 field
               )
             ) {
-              r[field] =
-                mapRawToRealistic(
+              r[field] = wsConnectedRef.current
+                ? mapRawToRealistic(
                   hardwareRef
                     .current[
                   field
@@ -1158,13 +1169,28 @@ export default function VirtualEngine({ externalFault, onTelemetryUpdate, onFaul
                   MAPPED_TARGET_RANGE[
                   field
                   ]
-                );
+                )
+                : 0;
             } else {
-              r[field] =
-                hardwareRef.current[
-                field
-                ];
+              r[field] = (hardwareMode === "live" && !wsConnectedRef.current)
+                ? 0
+                : hardwareRef.current[field];
             }
+          }
+
+          if (hardwareMode === "live" && !wsConnectedRef.current) {
+            r.rpm = 0;
+            r.cht_c = 0;
+            r.egt_c = 0;
+            r.oil_press_bar = 0;
+            r.oil_temp_c = 0;
+            r.fuel_flow_lph = 0;
+            r.vibration_g = 0;
+            r.battery_v = 0;
+            r.injection_deg = 0;
+            r.roll_deg = 0;
+            r.pitch_deg = 0;
+            r.yaw_deg = 0;
           }
 
           // --------------------------------------------------
